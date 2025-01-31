@@ -1,17 +1,23 @@
 Verbose: True
-catalog_filenames:       "_20??.yaml"
-Registration_Data:      "CTI Students.xlsx"
-Completed_Courses_Data: "Student Records Information - Faculty Access Portal.xlsx"
-Output_File:            "StudentsAudit.xlsx"
+catalog_filenames: "_20??.yaml"
+Input_File:        "Student Records Information - Faculty Access Portal.xlsx"
+Registration_Data: ""  # additional data for columns not in FAP: FailedCourses, Registered, Registered_Summer
+Output_File:       "StudentsAudit.xlsx"
 Number_Projection_Courses: 10
 Number_Key_Courses:        3
 
 Concentrations: { 
   "Security and Network Tech" : "SECNET",
+  "Security and Network Tech (_SN)" : "SECNET",
+  "Cyber Security SPZ (_CY)": "SECNET",
   "Web and Mobile App Development" : "WAM",
+  "Web and Mobile App Development (_WM)" : "WAM",
   "Business Intelligence" : "BI",
+  "Business Intelligence (_BI)": "BI",
   "Enterprise Systems" : "ES",
-  "Mgmt. of Information Systems" : "MIS"
+  "Enterprise Systems (_ES)" : "ES",
+  "Mgmt. of Information Systems" : "MIS",
+  "Mgmt. of Information Systems (_MS)" : "MIS"
 }
 
 Equal_Catalog_Years: {
@@ -22,27 +28,13 @@ Equal_Catalog_Years: {
 }
 
 File_Format: {
-  "CTI Students.xlsx": {
-    skiprows: 0,
-    columns: {
-      "STUD_ID" : "ID",
-      "GENDER" : "Gender",
-      "CAMPUS" : "Campus",
-      "CTLG_TERM" : "Catalog",
-      "CONCENTRATION" : "Concentration",
-      "SKILL" : "Skill",
-      "CGPA" : "cGPA",
-      "WF_W_SPRING_2024" : "Failed_Courses",
-      "REG_CRSE_202421" : "Registered",
-      "REG_CRSE_202323" : "Registered_Summer"
-    }
-  },
   "Student Records Information - Faculty Access Portal.xlsx": {
     skiprows: 2,
     columns: {
       "Student ID" : "ID",
-      "CurrentCourses" : "CurrentCourses",
-      "CompletedCourses" : "Completed_Courses",
+      "Admitted Term (Major)" : "Catalog",
+      # "NextCourses" : "Registered",
+      "CGPA" : "cGPA"
     }
   }
 }

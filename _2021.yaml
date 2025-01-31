@@ -5,6 +5,7 @@ Course_CHs: {
   1: [  INS211, SWE321, CIT461, INS469, INS477, INS475, INS363, INS368, INS464, INS426,
         NET257, SEC336, NET352, SEC433 ],
   2: [],
+  4: [],
   default: 3 
 }
 
@@ -74,7 +75,7 @@ PreRequisites: {
   INS410: {a: INS260, b: SEC235}
 }
 
-# Key/important courses (pre-requisite will be added automatically), order counts
+# Key/important courses; pre-requisite courses will be added automatically; order counts
 Key_Courses: [ CIT466 ]
 
 SECNET:
@@ -137,7 +138,14 @@ Groups: {
   GroupD: [ ENV240, GEN195, PBH267, PHY201 ],
   GroupG: [ GEN185],
 
-  MTH213: [ MTH281 ],  # substitutions
+  MTH213: [ MTH281 ],  # substitution
+  HSS255: [ FYE125 ],  # substitution
+  GEN110: [ FYE110 ],  # substitution
+  GEN220: [ FYE150 ],  # substitution
+  ISL135: [ FYE120 ],  # substitution
+  FYE140: [ GEN140, GEN145 ],  # substitution
+  ARA130: [ FYE145, FYE146 ],  # substitution
+  GEN175: [ FYE195 ],  # substitution
 
   P_Elective: [ 
     IMT375, SWE245, SWE371, CIT210, CIT305, CIT372, 
@@ -175,21 +183,23 @@ Groups: {
     SEC235, 
     SOC326, SOC341, SOC374, 
     EDC324, 
-    TCC371]
+    TCC371
+    GEN175, HIS201, MTH212  #  Added by request from Dr. Fatna on 8/12/2024
+    ]
 }
 
 Rules: {
   "CIT490 can only be taken alone or with CIT499" : {
-    RegCount: [2,2],
-    Allow: CIT499,
-    If_Not_Drop : [CIT490]
+    ProjectionCount: [2,2],
+    MissingAny: [CIT499],
+    Drop : [CIT490]
   },
   "CIT499 min 105 earned CH" : {
     ECHiP: [105,999],
     If_Not_Drop : [CIT499]
   },
   "CIT499 can be taken with max 3 courses" : {
-    RegCount: [1,4],
+    ProjectionCount: [1,4],
     If_Not_Drop : [CIT499]
   },
   "Once a year, not offered course (AUH-Female)" : {
@@ -199,5 +209,17 @@ Rules: {
   "Once a year, not offered course (AUH-Male)" : {
     Campus: ["AUH - Men's Campus"],
     Drop : [IMT345, IMT375]
+  },
+  "Only one MATH course-A" : {
+    MatchAll: [MTH213, MTH215],
+    Drop : [MTH213]
+  },
+  "Only one MATH course-B" : {
+    MatchAll: [MTH213, MTH281],
+    Drop : [MTH281]
+  },
+  "Only one MATH course-C" : {
+    MatchAll: [MTH215, MTH281],
+    Drop : [MTH281]
   },
 }
