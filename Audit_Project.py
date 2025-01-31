@@ -1,20 +1,18 @@
 #! /usr/bin/env python
 
-
-"""
-Copyright:  Sinan Salman, 2024
+"""Copyright:  Sinan Salman, 2024
 License:    GPLv3
 
 Version History:
-19.05.2024	1.0     initial release
-"""
-
+29.05.2024	1.1     improved logic, format, and added rules
+20.05.2024	1.0     initial release"""
 
 import pandas as pd
 import yaml
 import glob
 import copy
 import time
+from collections import Counter
 
 
 def read_yaml(filename):
@@ -25,13 +23,10 @@ def read_yaml(filename):
 
 tik = time.time()
 config_filename = '_config.yaml'
-catalogs = {}
 config = read_yaml(config_filename)
 verbose = config['Verbose']
-catalog_filenames = config['catalog_filenames']
-Input_Data_File = config['Input_Data_File']
-Output_Data_File = config['Output_Data_File']
-for filename in glob.glob(catalog_filenames):
+catalogs = {}
+for filename in glob.glob(config['catalog_filenames']):
     catalogs[filename[1:5]] = read_yaml(filename)
     
 
@@ -39,192 +34,324 @@ def load_data(filename):
     global config
     format = config['File_Format'][filename]
     df = pd.read_excel(filename, sheet_name=0, skiprows=format['skiprows'])
-    # df = pd.read_csv(filename, index_col=False, header=0, engine='python',
-    #                     skiprows=format['skiprows'], sep=format['sep'],
-    #                     encoding='utf_8', encoding_errors='replace', on_bad_lines='warn')
-    drop_list = [k for k in df.columns if k not in format['columns'].keys()]
-    df.drop(drop_list, axis=1, inplace =True)
+    missing_columns_error = []
+    missing_columns_warning = []
+    for k,v in format['columns'].items():
+        if k not in df.columns:
+            if v in ['ID','Catalog','Concentration','Completed_Courses']:
+                missing_columns_error.append(k)
+            else:
+                missing_columns_warning.append(k)
+                df[k] = ''
+    if missing_columns_error:
+        print(f'Error: the following columns {missing_columns_error} are missing in the input data file: {filename}')
+        quit()
+    if missing_columns_warning:
+        print(f'Warning: the following columns {missing_columns_warning} are missing in the input data file: {filename}, continuing with no entries for these columns.')
+
     df.rename(columns=format['columns'], inplace=True)
-    for x in ['Skill','Failed_Courses','Registered','Registered_Summer','Current_Courses','Completed_Courses','Remaining_Courses']:
-        df[x] = df[x].fillna('')
+    for c in df.columns:
+        if c in ['Skill','Failed_Courses','Registered',
+                 'Registered_Summer','Current_Courses',
+                 'Completed_Courses']:
+            df[c] = df[c].fillna('')
     return df
 
 
-def drop_course(crs, cat):
-    for semester, plan in cat.items():
-        for order, courses in plan.items():
-            if crs in courses:
-                cat[semester][order].remove(crs)
-                return True
-    return False
-    
+def drop_course(course, Catalog):
+    if course in Catalog:
+        Catalog.remove(course)
+        return True
+    else:
+        return False
 
-def audit_student_registration(rec, catalog_year, concentration):
+
+def get_course_CHs(course, Course_CHs):
+    for k,v in Course_CHs.items():
+        if k != 'default':
+            if course in v:
+                return k
+    return getattr(Course_CHs, 'default', 3)
+
+
+def apply_rule(rules, rec,  CH_earned,  Projected_Courses,  Must_take_Courses):
+    applied_rules = []
+    for label, rule in rules.items():
+        applicable = True
+        for k,v in rule.items():
+            if k in ['Drop','If_Not_Drop']:
+                continue
+            if k == 'Campus':
+                if rec['Campus'] in v:
+                    applicable &= True
+                else:
+                    applicable &= False
+            if k == 'RegCount':
+                if v[0] <= len(Projected_Courses) <= v[1]:
+                    applicable &= True
+                else:
+                    applicable &= False
+            if k == 'ECHiP':
+                if v[0] <= CH_earned <= v[1]:
+                    applicable &= True
+                else:
+                    applicable &= False
+            if k == 'Allow':
+                if v in Projected_Courses:
+                    applicable &= True
+                else:
+                    applicable &= False
+
+        Dropped_Courses = set()
+        if ('Drop' in rule.keys() and applicable) or ('If_Not_Drop' in rule.keys() and not applicable):
+            for course in v:
+                if course in Projected_Courses:
+                    Projected_Courses.remove(course)
+                    Dropped_Courses.add(course)
+                if course in Must_take_Courses:
+                    Must_take_Courses.remove(course)
+                    Dropped_Courses.add(course)
+
+        if Dropped_Courses:
+            applied_rules.append(f'{label}(drop:{"+".join(Dropped_Courses)})')
+
+    return '\n'.join(applied_rules)
+
+
+def audit_student_registration(record, catalog_year, concentration):
     global config, catalogs, verbose
 
     # setup variables
-    rec = rec.to_dict()
+    rec = record.to_dict()
     if rec["Failed_Courses"]:
         Failed_Courses = [x.strip()[:6] for x in rec["Failed_Courses"].split(',')]
     else:
         Failed_Courses = []
     if rec["Completed_Courses"]:
-        Completed_Courses = [x.strip() for x in rec["Completed_Courses"].split(',')]
+        Completed_Courses = [x.strip()[:6] for x in rec["Completed_Courses"].split(',')]
     else:
         Completed_Courses = []
+    if rec["Registered"]:
+        Registered = [x.strip()[:6] for x in rec["Registered"].split(',')]
+    else:
+        Registered = []
+    if rec["Registered_Summer"]:
+        Registered_Summer = [x.strip()[:6] for x in rec["Registered_Summer"].split(',')]
+    else:
+        Registered_Summer = []
     cat = copy.deepcopy(catalogs[catalog_year][concentration])
     grp = copy.deepcopy(catalogs[catalog_year]['Groups'])
-    one_CH_Courses = copy.deepcopy(catalogs[catalog_year]['One_CH_Courses'])
+    Course_CHs = copy.deepcopy(catalogs[catalog_year]['Course_CHs'])
     CoRequisites = copy.deepcopy(catalogs[catalog_year]["CoRequisites"])
+    PreRequisites = copy.deepcopy(catalogs[catalog_year]["PreRequisites"])
 
-    # remove courses from the catalog plan
+    # if verbose: 
+    #     for k,v in rec.items():
+    #         print(f'{k:20s}:{v}')
+    #     print('\n')
+
+    #  Collapse all Pre-Reqs into a flat list
+    Key_Courses = catalogs[catalog_year]['Key_Courses'].copy()
+    for PreReq in PreRequisites.values():
+        if isinstance(PreReq, str): # one course
+            if PreReq not in Key_Courses:
+                Key_Courses.append(PreReq)
+        elif isinstance(PreReq, dict): # any of the courses in a dict 
+            for c in PreReq.values():
+                if c not in Key_Courses:
+                    Key_Courses.append(c)
+        elif isinstance(PreReq, list): # all of the courses in a list
+            for c in PreReq:
+                if c not in Key_Courses:
+                    Key_Courses.append(c)
+        else:
+            print (f'Error: preReq "{PreReq}" is not recognized as valid format for PreRequisites')
+            quit()
+
+    # remove completed courses from the catalog plan & check for group/elective courses
     taken = []
-    for course in Completed_Courses.copy():
+    satisfy_groups = []
+    not_in_plan = []
+    for course in Completed_Courses:
         if drop_course(course, cat):
-            Completed_Courses.remove(course)
             taken.append(course)
         else:
-            if verbose: print(f'{course} not found in plan')
-    if verbose: print(f'taken: {taken}')
+            course_found_in_groups = False
+            for g, l in grp.items():
+                if course in l:
+                    if drop_course(g, cat):
+                        taken.append(course)
+                        satisfy_groups.append(f'{course}({g})')
+                        course_found_in_groups = True
+                        break
+            if not course_found_in_groups:
+                not_in_plan.append(course)
 
-    # remove group/elective courses from the catalog plan
-    for course in Completed_Courses.copy():
-        course_found_in_groups = False
-        for g, l in grp.items():
-            if course in l and course not in taken:
-                if drop_course(g, cat):
-                    Completed_Courses.remove(course)
-                    taken.append(course)
-                    if verbose: print(f'{course} --> {g}')
-                    course_found_in_groups = True
-        if not course_found_in_groups:
-            if verbose: print(f'{course} Not found in groups; uncounted')
+    if verbose: 
+        print(f'Taken courses:  {", ".join(taken)}')
+        print(f'Satisfy groups: {", ".join(satisfy_groups)}')
+        print(f'Uncounted:      {", ".join(not_in_plan)}')
 
-    # prep preojection for the next 10 courses
-    proj_10 = []
-    for course in Failed_Courses:  # start w/ failed courses
-        if len(proj_10) < 10:
-            proj_10.append(course)
-    for plan in cat.values():  # add remaining courses from plan
-        for courses in plan.values():
-            for crs in courses:
-                if crs not in proj_10 and len(proj_10) < 10:
-                    proj_10.append(crs)
+    # remove courses from plan when they have unsatisfied pre-requisites
+    courses_w_unsatisfied_prereqs = []
+    courses_w_unsatisfied_prereqs_and_why = []
+    for course in cat.copy():
+        metPreReq = False
+        if course in PreRequisites.keys():
+            PreReq = PreRequisites[course]
+            if isinstance(PreReq, str): # one course
+                if PreReq in taken:
+                    metPreReq = True
+            elif isinstance(PreReq, dict): # any of the courses in a dict 
+                for c in PreReq.values():
+                    if c in taken:
+                        metPreReq = True
+            elif isinstance(PreReq, list): # all of the courses in a list
+                metPreReq = True
+                for c in PreReq:
+                    if c not in taken:
+                        metPreReq = False
+            if not metPreReq:
+                if not drop_course(course, cat):
+                    raise ValueError(f'could not drop course:{course} from plan: {cat}')
+                courses_w_unsatisfied_prereqs.append(course)
+                courses_w_unsatisfied_prereqs_and_why.append(f'{course}({PreReq})')
 
-    # prep a list of 3 key courses to take from the projection
-    key___3 = []
-    for plan in cat.values():
-        for crs in plan[1]:
-            if len(key___3) < 3:
-                key___3.append(crs)
-
-    # calculate registered CH
+    # calculate registered & earned CH
     CH_registered = 0
-    for c in rec["Registered"]:
-        if c in one_CH_Courses:
-            CH_registered += 1
-        else:
-            CH_registered += 3
+    CH_earned = 0
+    for c in Registered:
+        CH_registered += get_course_CHs(c, Course_CHs)
+    for c in taken:
+        CH_earned += get_course_CHs(c, Course_CHs)
 
-    # prep list of needed courses
-    add = []
+    if verbose: 
+        print(f'Registered Summer Cources: {rec["Registered_Summer"]}')
+        print(f'       Registered Cources: {rec["Registered"]}')
+        print(f'           Registered CHs: {CH_registered}')
+        print(f'               Earned CHs: {CH_earned}')
+
+    # prep Projected & Must_take_Courses
+    Projected_Courses = []
+    Must_take_Courses = []
+    for course in Failed_Courses:  # start w/ failed courses
+        if course not in Projected_Courses:
+            Projected_Courses.append(course)
+        if course not in Must_take_Courses:
+            Must_take_Courses.append(course)
+    for course in cat:  # add remaining courses from plan
+        if course not in Projected_Courses:
+            Projected_Courses.append(course)
+        if course in Key_Courses and course not in Must_take_Courses:
+            Must_take_Courses.append(course)
+
+    # apply rules
+    rules_msg = apply_rule(catalogs[catalog_year]['Rules'], 
+                           rec, 
+                           CH_earned, 
+                           Projected_Courses, 
+                           Must_take_Courses)
+
+    Projected_Courses = list(Projected_Courses)[:config['Number_Projection_Courses']]
+    Must_take_Courses = list(Must_take_Courses)[:config['Number_Key_Courses']]
+
+    if verbose: 
+        print(f'Applied rules:\n{rules_msg}\n')
+        print(f'     Plan courses: {", ".join(cat+courses_w_unsatisfied_prereqs)}')
+        print(f'unsatisfied PreReq: {", ".join(courses_w_unsatisfied_prereqs_and_why)}\n')
+        print(f'Projected courses: {", ".join(Projected_Courses)}')
+        print(f'Must take courses: {", ".join(Must_take_Courses)}')
+
+    # prep list of courses to add
+    add_courses = []
     add_CH = 0
     minCH = 14 if rec['cGPA']>2 else 11  # need to make this parametrized
-    for course in key___3:
+    total_registration = set(Registered + Registered_Summer)
+    for course in Must_take_Courses + Projected_Courses:
         if CH_registered+add_CH < minCH:
-            if course not in rec["Registered_Summer"]:
-                add.append(course)
-                add_CH += 1 if course in one_CH_Courses else 3
-    for course in proj_10:
-        if CH_registered+add_CH < minCH:
-            if course not in rec["Registered_Summer"]:
-                add.append(course)
-                add_CH += 1 if course in one_CH_Courses else 3
+            if course not in total_registration and course not in add_courses:
+                add_courses.append(course)
+                add_CH += get_course_CHs(course, Course_CHs)
 
     # include co-requisites
-    for course in add:
+    added_co_requisites = []
+    total_registration = total_registration.union(add_courses)
+    for course in total_registration:
         if course in CoRequisites.keys():
             coreq = CoRequisites[course]
-            if coreq not in add:
-                add.append(coreq)
-                add_CH += 1 if coreq in one_CH_Courses else 3
-                if verbose: print(f'added co=requisite: {coreq}')
+            if coreq not in total_registration and coreq not in add_courses:
+                add_courses.append(coreq)
+                added_co_requisites.append(coreq)
+                add_CH += get_course_CHs(coreq, Course_CHs)
 
-    # cleanup cat:
-    cat_copy = copy.deepcopy(cat)
-    for semester, plan in cat_copy.items():
-        plan = plan[1] + plan [2]
-        if not plan:
-            del cat[semester]
-        else:
-            cat[semester] = plan
+    if verbose: 
+        print(f'added co-reqs: {", ".join(added_co_requisites)}')
+        print(f'  add_courses: {", ".join(add_courses)}')
+        print(f'       add_CH: {add_CH}')
 
-    return {'Catalog': str(cat).replace("'","").replace("{","").replace("}",""),
-            'Uncounted': ', '.join(Completed_Courses),
-            'Projection': ', '.join(proj_10),
-            'add': ', '.join(add),
-            'add_CH': str(add_CH)}
-
-
-# def apply_rules(df):
-#     n = 1
-#     for rule in rules:
-#         tag = [f'Rule-{n:02d}']
-#         mask = [True] * len(df) 
-#         for k,v in rule.items():
-#             if not v:
-#                 continue
-#             if k in ['cGPA','ECH']:
-#                 mask = mask & ((df[k]>=v[0]) & (df[k]<=v[1]))
-#             if k in ['Catalog','Concentration','Standing']:
-#                 mask = mask & (df[k].include == v)
-# still writing code here
-#         if k == 'Tag':
-#             if 
-#             mask = mask & ((df[k]>=v[0]) & (df[k]<=v[1]))
-#         if k == 'Audit':
-#             if rule['Audit'] == True:
-#                 Print('need to audit')
-#             if k == 'xxxx':
-#                 mask = mask & df[k].str.contains(v,case=Case,regex=True)
-#         affected_rows = sum(mask)
-#         if affected_rows == 0:
-#             print(f'Warning rule with Zero affected rows: {rule}')
-#         else:
-#             df.loc[mask,'Cat'] = Label
-#         n += 1
-#     df.loc[(df['Cat']==''),'Cat'] = Default
-#     return df
+    return {
+        'taken': ', '.join(taken),
+        'satisfy_groups': ', '.join(satisfy_groups),
+        'Uncounted': ', '.join(not_in_plan),
+        'Remaining_in_plan': ', '.join(cat+courses_w_unsatisfied_prereqs),
+        'unsatisfied_PreReq': ', '.join(courses_w_unsatisfied_prereqs_and_why),
+        'Projected_Courses': ', '.join(Projected_Courses),
+        'Must_take_Courses': ', '.join(Must_take_Courses),
+        'Courses_to_add': ', '.join(add_courses),
+        'Courses_to_add_CH': str(add_CH),
+        'CH_earned': str(CH_earned),
+        'CH_registered': str(CH_registered),
+        'Applied_Rules': rules_msg}
 
 if __name__ == "__main__":
     n = 0
-    df = load_data(Input_Data_File)
-    df['Plan'] = ''
-    df['Uncounted'] = ''
-    df['Projection'] = ''
-    df['add'] = ''
-    df['add_CH'] = ''
+    df = load_data(config['Registration_Data'])
+    df_CompletedCourses = load_data(config['Completed_Courses_Data'])
+    df = pd.merge(df, df_CompletedCourses[['ID','CurrentCourses','Completed_Courses']], on="ID")
+    output_columns = ['Audit_taken', 'Audit_satisfy_groups', 'Audit_uncounted', 
+                      'Audit_Remaining_in_plan','Audit_unsatisfied_PreReq',
+                      'Audit_Projected_Courses', 'Audit_Must_take_Courses', 
+                      'Audit_Courses_to_add', 'Courses_to_add_CH', 
+                      'Audit_CH_earned', 'CH_registered',
+                      'Audit_Applied_Rules']
+    for c in output_columns:
+        df[c] = ''
+    warnings = []
     for index, row in df.iterrows():
+
+        # if row["ID"] not in [202106299,]:
+        #     continue
+
         n += 1
-        if verbose: print(f'{"-"*80}\nProcessing student ID: {row["ID"]}')
+        if verbose: 
+            print(f'{"-"*80}\nProcessing student ID: {row["ID"]}')
         # get catalog year and concentration
         concentration = row['Concentration']
         if concentration in config['Concentrations'].keys():
             concentration = config['Concentrations'][concentration]  # replace concentraiton with acronym
         catalog_year = str(row['Catalog'])[:4]
         if catalog_year in config['Equal_Catalog_Years'].keys():
-            if verbose: print(f'Catalog {catalog_year} is eqivelant to {config["Equal_Catalog_Years"][catalog_year]}; the latter is used')
+            if verbose: 
+                print(f'Info: Catalog {catalog_year} is eqivelant to {config["Equal_Catalog_Years"][catalog_year]}; the latter is used')
             catalog_year = config['Equal_Catalog_Years'][catalog_year]
         # check if catalog data is available first
+        msg = ''
         if catalog_year not in catalogs.keys():
-            print(f'{row["ID"]} with unrecognized catalog year: {catalog_year}')
+            warnings.append(f'Students with unrecognized catalog year: {catalog_year}')
+            df.loc[index,['Audit_taken']] = f'Warning: unrecognized catalog year: {catalog_year}'
             continue
         if concentration not in catalogs[catalog_year].keys():
-            print(f'{row["ID"]} with unrecognized concentration: {concentration}')
+            warnings.append(f'Students with unrecognized concentration: {concentration}')
+            df.loc[index,['Audit_taken']] = f'Warning: unrecognized concentration: {concentration}'
             continue
         # Audit
         R = audit_student_registration(row, catalog_year, concentration)
-        df.loc[index,['Plan','Uncounted','Projection','add','add_CH']] = R.values()
-    df.to_excel(Output_Data_File)
+        df.loc[index,output_columns] = R.values()
+    df.to_excel(config['Output_File'])
+    warnings = Counter(warnings)
+    if warnings:
+        print(f'The folowing warnings were present:')
+        for w in warnings:
+            print(f'\t{warnings[w]:4d} {w}')
     tok = time.time()
-    print(f'\nProcessed {n} students in {round(tok-tik)} seconds')
+    print(f'\nProcessed {n} students in {round(tok-tik)} seconds\n')

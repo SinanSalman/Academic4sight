@@ -1,119 +1,203 @@
 # ZU CTI Catalog 2021
 
-One_CH_Courses: [ INS211, SWE321, CIT461, INS469, INS477, INS475, INS363, INS368, INS464, INS426
-                  NET257, SEC336, NET352, SEC433 ]
-
-CoRequisites: { SWE320: SWE321, 
-                CIT460: CIT461, 
-                INS467: INS469, 
-                INS476: INS477, 
-                INS474: INS475,
-                INS361: INS363,
-                INS369: INS368,
-                INS463: INS464,
-                INS425: INS426,
-                NET256: NET257,
-                SEC335: SEC336,
-                NET351: NET352,
-                SEC432: SEC433 }
-
-SECNET : {
-  S1: {1: [ENG140, CIT210, ARA130],         2: [GroupA, GroupD]},
-  S2: {1: [ENG145, SEC235, MTH215],         2: [ISL135, GroupA]},
-  S3: {1: [ENG240, SWE225, NET256],         2: [NET257, MTH281, GroupG]},
-  S4: {1: [CIT365, CIT285, SEC335, CIT315], 2: [SWE245, SEC336]},
-  S5: {1: [NET351],                         2: [NET352, CIT305, SWE320, SWE321, ARA345]}, 
-  S6: {1: [],                               2: [INS377, CIT460, CIT461, SEC432, SEC433, ZU_Elective]},
-  S7: {1: [],                               2: [SEC435, CIT466, CIT480, HSS255, ZU_Elective]},
-  S8: {1: [],                               2: [SEC430, NET455, ZU_Elective]},
-  S9: {1: [],                               2: [CIT499, CTI490]}
+Course_CHs: {
+  0: [],
+  1: [  INS211, SWE321, CIT461, INS469, INS477, INS475, INS363, INS368, INS464, INS426,
+        NET257, SEC336, NET352, SEC433 ],
+  2: [],
+  default: 3 
 }
 
-WAM : {
-  S1: {1: [ENG140, CIT210, ARA130],         2: [GroupA, GroupD]},
-  S2: {1: [ENG145, MTH215],                 2: [ISL135, SEC235, GroupA]},
-  S3: {1: [ENG240, SWE225],                 2: [NET256, NET257, MTH281, GroupG]},
-  S4: {1: [CIT365, CIT285, SWE245],         2: [IMT375, CIT315]},
-  S5: {1: [SWE320],                         2: [IMT340, CIT305, SWE321, ARA345]}, 
-  S6: {1: [],                               2: [INS377, CIT460, CIT461, SWE346, SWE371, CIT372]},
-  S7: {1: [],                               2: [IMT376, CIT466, CIT480, HSS255, ZU_Elective]},
-  S8: {1: [],                               2: [CIT470, ZU_Elective, ZU_Elective]},
-  S9: {1: [],                               2: [CIT499, CTI490]}
+CoRequisites: {
+  SWE320: SWE321, 
+  CIT460: CIT461, 
+  INS467: INS469, 
+  INS476: INS477, 
+  INS474: INS475,
+  INS361: INS363,
+  INS369: INS368,
+  INS463: INS464,
+  INS425: INS426,
+  NET256: NET257,
+  SEC335: SEC336,
+  NET351: NET352,
+  SEC432: SEC433
 }
 
-BI : {
-  S1: {1: [ENG140, MTH215, ARA130],         2: [GroupA, GroupD]},
-  S2: {1: [INS260, ENG145, MTH213],         2: [ISL135, SEC235]},
-  S3: {1: [ENG240, SWE225],                 2: [ACC202, GroupA, INS211, INS311]},
-  S4: {1: [CIT365, MGT209, CIT285],         2: [OPR300, GroupG]},
-  S5: {1: [MKT210],                         2: [CIT470, ARA345, P_Elective, SWE320, SWE321]}, 
-  S6: {1: [CIT466],                         2: [INS377, CIT460, CIT461, INS467, INS469]},
-  S7: {1: [],                               2: [INS476, INS477, CIT480, HSS255, HRM301]},
-  S8: {1: [],                               2: [INS474, INS475, MKT433, P_Elective]},
-  S9: {1: [],                               2: [CIT499, CTI490]}
+# Format: 
+#   course: pre-requisite
+#   course-1 and course-2 are pre-requisite:  [course-1, Course-2]
+#   course-1  or course-2 are pre-requisite:  {a: course-1, b: Course-2}
+PreRequisites: {
+  ENG145: ENG140,
+  ENG240: ENG145,
+  CIT285: ENG240,
+  CIT305: CIT285,
+  HRM301: {a: CIT285, b: MGT209},
+  ACC202: MTH213,
+  OPR300: MTH213,
+  SWE225: MTH215,
+  CIT315: SWE225,
+  SWE245: SWE225,
+  SWE320: SWE225,
+  IMT340: SWE225,
+  IMT376: SWE225,
+  SWE371: SWE225,
+  SWE346: [CIT365, SWE245, SWE320],
+  MKT433: MKT210,
+  NET256: CIT210,
+  CIT372: CIT210,
+  NET351: NET256,
+  NET455: NET351,
+  SEC430: SEC235,
+  SEC335: [NET256, SEC235],
+  SEC432: SEC335,
+  SEC435: [SEC335, CIT315],
+  INS311: INS260,
+  CIT365: {a: INS260, b: CIT210},
+  INS377: {a: INS260, b: CIT210},
+  INS361: INS260,
+  INS369: INS260,
+  INS468: INS260,
+  INS492: INS260,
+  CIT460: CIT365,
+  CIT466: CIT365,
+  INS467: CIT365,
+  CIT470: CIT365,
+  INS425: CIT365,
+  INS465: CIT365,
+  INS476: CIT466,
+  INS474: CIT466,
+  INS463: CIT460,
+  INS362: INS361,
+  INS464: INS361,
+  INS410: {a: INS260, b: SEC235}
 }
 
-MIS : {
-  S1: {1: [ENG140, MTH215, ARA130],         2: [GroupA, GroupD]},
-  S2: {1: [INS260, ENG145, MTH213],         2: [ISL135, SEC235]},
-  S3: {1: [ENG240, SWE225],                 2: [ACC202, GroupA, INS211, INS311]},
-  S4: {1: [CIT365, MGT209, CIT285],         2: [OPR300, GroupG]},
-  S5: {1: [],                               2: [INS361, INS363, ARA345, P_Elective, SWE320, SWE321]}, 
-  S6: {1: [],                               2: [INS377, CIT460, CIT461, CIT466, INS369, INS368]},
-  S7: {1: [],                               2: [INS410, INS425, INS426, CIT480, HSS255, HRM301]},
-  S8: {1: [],                               2: [INS468, INS465, P_Elective]},
-  S9: {1: [],                               2: [CIT499, CTI490]}
+# Key/important courses (pre-requisite will be added automatically), order counts
+Key_Courses: [ CIT466 ]
+
+SECNET:
+  [ ARA130, ENG140, CIT210, GroupA, GroupD,              #  S1
+    ISL135, ENG145, MTH215, SEC235, GroupA,              #  S2
+    ENG240, NET256, NET257, SWE225, MTH281, GroupG,      #  S3
+    CIT285, SWE245, SEC335, SEC336, CIT315, CIT365,      #  S4
+    SWE320, SWE321, NET351, NET352, CIT305, ARA345,      #  S5
+    CIT460, CIT461, INS377, SEC432, SEC433, ZU_Elective, #  S6
+    SEC435, CIT466, CIT480, HSS255, ZU_Elective,         #  S7
+    SEC430, NET455, ZU_Elective,                         #  S8
+    CIT499, CIT490 ]                                     #  S9
+
+WAM:
+  [ ARA130, ENG140, CIT210, GroupA, GroupD,             #  S1
+    ISL135, ENG145, MTH215, SEC235, GroupA,             #  S2
+    ENG240, NET256, NET257, SWE225, MTH281, GroupG,     #  S3
+    CIT285, SWE245, IMT375, CIT315, CIT365,             #  S4
+    SWE320, SWE321, CIT305, IMT340, ARA345,             #  S5
+    SWE346, SWE371, CIT372, INS377, CIT460, CIT461,     #  S6
+    IMT376, CIT466, CIT480, HSS255, ZU_Elective,        #  S7
+    CIT470, ZU_Elective, ZU_Elective,                   #  S8
+    CIT499, CIT490 ]                                    #  S9
+
+BI:  
+  [ ARA130, ENG140, MTH215, GroupA, GroupD,             #  S1
+    ISL135, ENG145, SEC235, INS260, MTH213,             #  S2
+    ENG240, ACC202, SWE225, GroupA, INS211, INS311,     #  S3
+    CIT365, MGT209, CIT285, OPR300, GroupG,             #  S4
+    MKT210, CIT470, ARA345, SWE320, SWE321, P_Elective, #  S5 
+    INS377, CIT460, CIT461, INS467, INS469, CIT466,     #  S6
+    INS476, INS477, CIT480, HSS255, HRM301,             #  S7
+    INS474, INS475, MKT433, P_Elective,                 #  S8
+    CIT499, CIT490 ]                                    #  S9
+
+MIS: 
+  [ ARA130, ENG140, MTH215, GroupA, GroupD,             #  S1
+    ISL135, ENG145, SEC235, INS260, MTH213,             #  S2
+    ENG240, ACC202, SWE225, GroupA, INS211, INS311,     #  S3
+    CIT365, MGT209, CIT285, OPR300, GroupG,             #  S4
+    INS361, INS363, ARA345, SWE320, SWE321, P_Elective, #  S5
+    INS377, CIT460, CIT461, INS369, INS368, CIT466,     #  S6
+    INS410, INS425, INS426, CIT480, HSS255, HRM301,     #  S7
+    INS468, INS465, P_Elective,                         #  S8
+    CIT499, CIT490 ]                                    #  S9
+
+ES:
+  [ ARA130, ENG140, MTH215, GroupA, GroupD,             #  S1
+    ISL135, ENG145, SEC235, INS260, MTH213,             #  S2
+    ENG240, ACC202, SWE225, GroupA, INS211, INS311,     #  S3
+    CIT365, MGT209, CIT285, OPR300, GroupG,             #  S4
+    INS361, INS363, ARA345, SWE320, SWE321, P_Elective, #  S5
+    INS377, CIT460, CIT461, INS369, INS368, CIT466,     #  S6
+    INS362, INS463, INS464, CIT480, HSS255, HRM301,     #  S7
+    INS468, INS492, P_Elective,                         #  S8
+    CIT499, CIT490 ]                                    #  S9
+
+Groups: { 
+  GroupA: [ ARC212, GEN150, ISL209, PSY212 ],
+  GroupD: [ ENV240, GEN195, PBH267, PHY201 ],
+  GroupG: [ GEN185],
+
+  MTH213: [ MTH281 ],  # substitutions
+
+  P_Elective: [ 
+    IMT375, SWE245, SWE371, CIT210, CIT305, CIT372, 
+    INS465, INS492, ACC203, FIN308, SEC430, NET255, NET256 ],
+
+  ZU_Elective: [ 
+    ANT261, ANT302, ANT362, ANT385, 
+    ARA211, ARA222, ARA235, ARA335, ARA380, 
+    ARM375, ARM395, 
+    ART201, ART205, ART220, ART221, ART251, 
+    CIT210, CIT480, 
+    COM200, COM230, COM240, 
+    EDC207, EDP202, EDP307, 
+    ENG240, ENG322, ENG331, ENG360, ENG363, ENG364, ENG365, ENG367, ENG368, 
+    ENV240, ENV241, 
+    FLS361, 
+    GEN110, 
+    GEN150, GEN175, GEN185, GEN195, GEN220, 
+    HIS321, HIS381, 
+    HSS101, HSS353, 
+    IMT375, 
+    INS260, 
+    ISC383, 
+    ISL209, ISL210, 
+    LAW200, LAW225, 
+    MGT209, MKT210, 
+    MTH103, MTH121, MTH213, MTH214, MTH215, MTH281, 
+    NET255, 
+    NUT205, 
+    PBH267, 
+    PHL201, 
+    PHY100, PHY210, 
+    POL227, POL335, 
+    PSY212, PSY363, 
+    SEC235, 
+    SOC326, SOC341, SOC374, 
+    EDC324, 
+    TCC371]
 }
 
-ES : {
-  S1: {1: [ENG140, MTH215, ARA130],         2: [GroupA, GroupD]},
-  S2: {1: [INS260, ENG145, MTH213],         2: [ISL135, SEC235]},
-  S3: {1: [ENG240, SWE225],                 2: [ACC202, GroupA, INS211, INS311]},
-  S4: {1: [CIT365, MGT209, CIT285],         2: [OPR300, GroupG]},
-  S5: {1: [INS361],                         2: [INS363, ARA345, P_Elective, SWE320, SWE321]}, 
-  S6: {1: [CIT460],                         2: [INS377, CIT461, CIT466, INS369, INS368]},
-  S7: {1: [],                               2: [INS362, INS463, INS464, CIT480, HSS255, HRM301]},
-  S8: {1: [],                               2: [INS468, INS492, P_Elective]},
-  S9: {1: [],                               2: [CIT499, CTI490]}
-}
-
-Groups: { GroupA: [ ARC212, GEN150, ISL209, PSY212 ],
-          GroupD: [ ENV240, GEN195, PBH267, PHY201 ],
-          GroupG: [ GEN185],
-
-          P_Elective: [ IMT375, SWE245, SWE371, CIT210, CIT305, CIT372, 
-                    INS465, INS492, ACC203, FIN308, SEC430, NET255 ],
-
-          ZU_Elective: [ ANT261, ANT302, ANT362, ANT385, 
-                    ARA211, ARA222, ARA235, ARA335, ARA380, 
-                    ARM375, ARM395, 
-                    ART201, ART205, ART220, ART221, ART251, 
-                    CIT210, CIT480, 
-                    COM200, COM230, COM240, 
-                    EDC207, EDP202, EDP307, 
-                    ENG240, ENG322, ENG331, ENG360, ENG363, ENG364, ENG365, ENG367, ENG368, 
-                    ENV240, ENV241, 
-                    FLS361, 
-                    GEN110, 
-                    GEN150, GEN175, GEN185, GEN195, GEN220, 
-                    HIS321, HIS381, 
-                    HSS101, HSS353, 
-                    IMT375, 
-                    INS260, 
-                    ISC383, 
-                    ISL209, ISL210, 
-                    LAW200, LAW225, 
-                    MGT209, MKT210, 
-                    MTH103, MTH121, MTH213, MTH214, MTH215, MTH281, 
-                    NET255, 
-                    NUT205, 
-                    PBH267, 
-                    PHL201, 
-                    PHY100, PHY210, 
-                    POL227, POL335, 
-                    PSY212, PSY363, 
-                    SEC235, 
-                    SOC326, SOC341, SOC374, 
-                    EDC324, 
-                    TCC371]
+Rules: {
+  "CIT490 can only be taken alone or with CIT499" : {
+    RegCount: [2,2],
+    Allow: CIT499,
+    If_Not_Drop : [CIT490]
+  },
+  "CIT499 min 105 earned CH" : {
+    ECHiP: [105,999],
+    If_Not_Drop : [CIT499]
+  },
+  "CIT499 can be taken with max 3 courses" : {
+    RegCount: [1,4],
+    If_Not_Drop : [CIT499]
+  },
+  "Once a year, not offered course (AUH-Female)" : {
+    Campus: ["AUH - Women's Campus"],
+    Drop : [IMT345, INS465, INS492]
+  },
+  "Once a year, not offered course (AUH-Male)" : {
+    Campus: ["AUH - Men's Campus"],
+    Drop : [IMT345, IMT375]
+  },
 }
