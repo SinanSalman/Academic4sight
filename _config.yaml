@@ -2,8 +2,6 @@ Verbose: False
 catalog_filenames:  "_20??.yaml"
 Input_Data_File:    "Students.xlsx"
 Output_Data_File:   "StudentsAudit.xlsx"
-Projection_Length: 10
-Key_Courses: 3
 
 Concentrations: { "Security and Network Tech":      "SECNET",
                   "Web and Mobile App Development": "WAM",
