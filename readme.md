@@ -1,4 +1,4 @@
-# Student Registration Audit System
+# Student Enrolment Auditing and Forecasting System
 
 ## Table of Contents
 
@@ -6,7 +6,9 @@
 2. [Dependencies](#dependencies)
 3. [Configuration Files](#configuration-files)
 4. [Main Logic](#main-Logic)
-5. [License](#license)
+5. [Forecasting Student Enrolment Demand](#forecasting-student-enrolment-demand)
+6. [Usage](#usage)
+7. [License](#license)
 
 ## Overview
 
@@ -48,9 +50,11 @@ Verbose: False
 
 ```yaml
 catalog_filenames: "_20??.yaml"
+catalog_defaults: "_common_catalog.yaml"
 ```
 
-- **Description**: Specifies the pattern for catalog filenames. The pattern `_20??.yaml` matches catalog files for the years 2000 to 2099.
+- **Description**: Specifies the pattern for catalog filenames. The pattern `_20??.yaml` matches catalog files for the years 2000 to 2099. ***catalog_defaults*** is the base catalog information that is extended by the `_20xx.yaml` files.
+
 
 #### Input and Output Data Files
 
@@ -61,6 +65,14 @@ Output_Data_File: "StudentsAudit.xlsx"
 
 - **Input_Data_File**: The Excel file containing student data.
 - **Output_Data_File**: The Excel file where the audited student data will be saved.
+
+#### Projection Parameters
+```yaml
+Number_Projection_Courses: 10
+Number_Key_Courses:        3
+```
+
+- **Description**: The number of forecasted courses and the number of key courses to prioritize when suggesting enrolment options.
 
 #### Concentrations
 
@@ -73,7 +85,7 @@ Concentrations:
     "Mgmt. of Information Systems":   "MIS" }
 ```
 
-- **Description**: Maps full concentration names to their corresponding abbreviations used in the system.
+- **Description**: Maps full concentration names (found in the input data) to their corresponding abbreviations used in the system and catalog files.
   - **Security and Network Tech**: SECNET
   - **Web and Mobile App Development**: WAM
   - **Business Intelligence**: BI
@@ -97,74 +109,45 @@ Equal_Catalog_Years:
 ### File Format
 
 ```yaml
-File_Format: 
-  {
-    "Students.xlsx": {
-      skiprows: 0,
-      columns: {
-        "STUD_ID" : "ID",
-        "STU_NAME" : "Name",
-        "CTLG_TERM" : "Catalog",
-        "MAJOR" : "Major",
-        "CONCENTRATION" : "Concentration",
-        "SKILL" : "Skill",
-        "CGPA" : "cGPA",
-        "EARNED_HRS" : "ECH",
-        "ASTD" : "Standing",
-        "WF_W_SPRING_2024" : "Failed_Courses",
-        "REG_HRS_202421" : "Registered_CH",
-        "COUNT_CRSE_202421" : "Registered_Count",
-        "REG_CRSE_202421" : "Registered",
-        "REG_CRSE_202323" : "Registered_Summer",
-        "COUNT_CRSE_202323" : "Registered_Summer_Count",
-        "REG_HRS_202323" : "Registered_Summer_CH",
-        "CurrentCourses" : "Current_Courses",
-        "CompletedCourses" : "Completed_Courses",
-        "IncompleteCourses" : "Remaining_Courses"
-      }
+File_Format: {
+  "Student Records Information - Faculty Access Portal.xlsx": {
+    skiprows: 2,
+    columns: {
+      "Student ID" : "ID",
+      "Admitted Term (Major)" : "Catalog",
+      "NextCourses" : "Registered",
+      "CGPA" : "cGPA"
     }
   }
+}
 ```
 
 - **File Format Configuration**: Specifies how to read the input data file.
   - **skiprows**: Number of rows to skip at the beginning of the file.
-  - **columns**: Maps columns in the Excel file to the desired column names used in the program.
-    - **STUD_ID**: Mapped to `ID`
-    - **STU_NAME**: Mapped to `Name`
-    - **CTLG_TERM**: Mapped to `Catalog`
-    - **MAJOR**: Mapped to `Major`
-    - **CONCENTRATION**: Mapped to `Concentration`
-    - **SKILL**: Mapped to `Skill`
-    - **CGPA**: Mapped to `cGPA`
-    - **EARNED_HRS**: Mapped to `ECH`
-    - **ASTD**: Mapped to `Standing`
-    - **WF_W_SPRING_2024**: Mapped to `Failed_Courses`
-    - **REG_HRS_202421**: Mapped to `Registered_CH`
-    - **COUNT_CRSE_202421**: Mapped to `Registered_Count`
-    - **REG_CRSE_202421**: Mapped to `Registered`
-    - **REG_CRSE_202323**: Mapped to `Registered_Summer`
-    - **COUNT_CRSE_202323**: Mapped to `Registered_Summer_Count`
-    - **REG_HRS_202323**: Mapped to `Registered_Summer_CH`
-    - **CurrentCourses**: Mapped to `Current_Courses`
-    - **CompletedCourses**: Mapped to `Completed_Courses`
-    - **IncompleteCourses**: Mapped to `Remaining_Courses`
+  - **columns**: Maps column names in the Excel file to the standard column names used in the program.
 
-### Catalog Files
+### `Catalog Files`
 
 Catalog files contain course plans and requirements for different academic years and concentrations.
 
-#### One_CH_Courses
+#### Course_CHs
 
-This section lists the courses that are worth one credit hour each.
+This section lists the courses and their credit hour worth, and a default value for all unlisted courses.
 
 ```yaml
-One_CH_Courses: 
-  [Course1, Course2, Course3]
+Course_CHs: {
+  0: [],
+  1: [  INS211, SWE321, CIT461, INS469, INS477, INS475, INS363, INS368, INS464, INS426,
+        NET257, SEC336, NET352, SEC433 ],
+  2: [],
+  4: [],
+  default: 3 
+}
 ```
 
-#### CoRequisites
+#### CoRequisites & PreRequisites
 
-This section defines the co-requisite courses. A co-requisite is a course that must be taken simultaneously with another course.
+This section defines the pre-requisite and co-requisite courses. A pre-requisite is a course that must be completed before taking another course. A co-requisite is a course that must be taken simultaneously with another course.
 
 ```yaml
 CoRequisites: 
@@ -172,20 +155,43 @@ CoRequisites:
     Course3: Course4}
 ```
 
-#### Concentration Plans
+```yaml
+PreRequisites: 
+  { Course1: Course2, 
+    Course3: Course4}
+```
 
-This section details the academic plans for various concentrations. Each concentration includes a series of semesters (`S1`, `S2`, etc.), each containing courses divided into two parts by priority (`1` and `2`, with `1` being higher priority).
+A dictionary entry (```{a: Course1, b: Course2}```) indicates an ***OR*** relationship. A list entry (```[Course1, Course2]```) indicates an ***AND*** relationship. For Example:
 
 ```yaml
-Concentration: 
-  S1: {1: [Course1, Course2],   2: [Course3, GroupA]},
-  S2: {1: [Course4],            2: [Elective, Course5]},
-  ...
+PreRequisites: {
+  Course1: {a: Course2, b:Course3},  # Course2 OR Course3
+  Course1: [Course2, Course3],        # Course2 AND Course3
+}
+```
+
+#### Key/important courses
+A list of key/important courses to be prioritized over other projection courses. Pre-requisite courses will be added automatically to this list. The list is in decreasing priority (order counts).
+
+```yaml
+Key_Courses: [ Course ]
+```
+
+#### Concentration Plans
+
+This section details the academic plans for various concentrations. Each concentration includes a list of ordered courses by decreasing priority (order counts).
+
+```yaml
+Concentration:
+  [ Course1, Course2,   #S1
+    Course3, GroupA,    #S2
+    Course4,            #S3
+    Elective, Course5]  #S4
 ```
 
 #### Groups
 
-This section defines various groups of courses that students can choose from as part of their academic plan.
+This section defines various groups of courses that students can choose from as part of their academic plan. This can also be used for susbtitution courses.
 
 ```yaml
 Groups: 
@@ -193,12 +199,31 @@ Groups:
     Elective: [Course3, Course4, ...]}
 ```
 
+#### Rules
+This section defines rules that can be applied to the student's course plan based on various conditions such as status, skill, campus, and more.
+
+```yaml
+Rules:
+  "Label": {
+    CONDITION1: [Value1, Value2, ...],
+    CONDITION2: [Value1, Value2, ...],
+
+    ACTION: [Course1, Course2, ...],
+    # OR
+    Note: "Some note about this rule"
+  }
+```
+
+***CONDITION***: `Status`, `Skill`, `Campus`, `ProjectionCount`, `ECHiP`, `MatchAll`, `MatchAny`, and `MissingAny`
+
+***ACTIONS***: `Drop`, `If_Not_Drop`, and `Note`
+
 ## Main Logic
 
 The script is designed to be executed as a standalone program. The main steps are:
 
 1. Read the configuration file `_config.yaml`.
-2. Load catalog files & student data.
+2. Load catalog files (`_catalog_defaults.yaml` and `_202x.yaml`) & student data.
 3. Determine the catalog year and concentration.
 4. Audit students' registrations against catalogs; for each student record:
     - Identify failed and completed courses. Remove completed courses from plan.
@@ -208,8 +233,14 @@ The script is designed to be executed as a standalone program. The main steps ar
     - Generate a list of additional courses needed to meet the minimum credit hour requirement.
     - Include co-requisite courses if necessary.
     - Save a summary of the student's academic plan.
+5. Tally students' projections
 
-### Example Usage
+## Forecasting Student Enrolment Demand
+ ToDo...
+
+## Usage
+
+### Syntax
 
 To run the script, use the following command:
 
@@ -219,15 +250,22 @@ python Audit.py
 
 ### Output
 
-The script generates an Excel file with the following columns for each student:
-- `Plan`: The updated catalog plan after removing completed courses.
-- `Uncounted`: List of completed courses not counted in the plan.
-- `Projection`: Projected courses for the next 10 enrollments.
-- `add`: List of additional courses needed to meet credit hour requirements.
-- `add_CH`: Total additional credit hours needed.
+The script generates an Excel file with the following columns for each student and text log file:
+- `Audit_taken`: Courses taken by the student.
+- `Audit_satisfy_groups`: Courses that satisfy group requirements.
+- `Audit_uncounted`: Completed courses not counted in the plan.
+- `Audit_Remaining_in_plan`: Remaining courses in the plan.
+- `Audit_unsatisfied_PreReq`: Courses with unsatisfied prerequisites.
+- `Audit_Projected_Courses`: Projected courses for the next 10 enrolment courses.
+- `Audit_Must_take_Courses`: Key courses that the student must take.
+- `Audit_Courses_to_add`: Additional courses needed to meet credit hour requirements.
+- `Courses_to_add_CH`: Total additional credit hours needed.
+- `Audit_CH_earned`: Total credit hours earned by the student.
+- `CH_registered`: Total credit hours registered by the student.
+- `Audit_Applied_Rules`: Rules applied to the student's course plan.
 
 ## License
 
 License:    GPLv3
 
-Copyright:  Sinan Salman, 2024
+Copyright:  Sinan Salman, 2024-2025

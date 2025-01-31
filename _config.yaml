@@ -1,8 +1,10 @@
-Verbose: True
+Verbose: False
 catalog_filenames: "_20??.yaml"
+catalog_defaults: "_common_catalog.yaml"
 Input_File:        "Student Records Information - Faculty Access Portal.xlsx"
-Registration_Data: ""  # additional data for columns not in FAP: FailedCourses, Registered, Registered_Summer
+# Input_File:        "CTI Students degree Audit.xlsx"
 Output_File:       "StudentsAudit.xlsx"
+# Registration_Data: ""  # additional data for columns not in FAP: FailedCourses, Registered_Summer
 Number_Projection_Courses: 10
 Number_Key_Courses:        3
 
@@ -33,7 +35,7 @@ File_Format: {
     columns: {
       "Student ID" : "ID",
       "Admitted Term (Major)" : "Catalog",
-      # "NextCourses" : "Registered",
+      "NextCourses" : "Registered",
       "CGPA" : "cGPA"
     }
   }

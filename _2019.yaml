@@ -1,0 +1,89 @@
+# ZU CTI Catalog 2019
+
+# Format: 
+#   number_of_CH: [list_of_ courses]
+#   default: Default_number_of_CH
+Course_CHs: {
+}
+
+# Format: 
+#   course: co-requisite
+CoRequisites: {
+}
+
+# Format: 
+#   course: pre-requisite
+#   course-1 and course-2 are pre-requisite:  [course-1, Course-2]
+#   course-1  or course-2 are pre-requisite:  {a: course-1, b: Course-2}
+PreRequisites: {
+}
+
+# Key/important courses; pre-requisite courses will be added automatically; order counts
+Key_Courses: [ ]
+
+# Concentrations' Catalog entries; Order determines priority
+SECNET:
+  [ GEN110, GEN120, ARA130, GEN140, GEN150,              #  S1
+    ISL135, GEN145, GEN175, GEN185,GEN195,               #  S2
+    GEN220, HSS255, ENG240, CIT210, MTH215,              #  S3
+    SEC235, MTH281, NET256, NET257, SWE225, SWE245,      #  S4
+    CIT300, CIT365, CIT315, SWE320, SWE321, ARA320,      #  S5
+    SEC335, SEC336, NET351, NET352, CIT305, INS377,      #  S6
+    SEC330, SEC331, SEC435, CIT466, CIT460, CIT461,      #  S7
+    SEC430, NET455, CIT480,                              #  S8
+    CIT499, CIT490 ]                                     #  S9
+
+WAM:
+  [ GEN110, GEN120, ARA130, GEN140, GEN150,             #  S1
+    ISL135, GEN145, GEN175, GEN185,GEN195,              #  S2
+    GEN220, HSS255, ENG240, CIT210, MTH215,             #  S3
+    SEC235, MTH281, NET256, NET257, SWE225, SWE245,     #  S4
+    CIT300, CIT365, IMT375, SWE320, SWE321, CIT315,     #  S5
+    IMT340, SWE346, SWE371, CIT305, ARA320,             #  S6
+    CIT372, CIT470, CIT460, CIT461, INS377,             #  S7
+    IMT376, CIT466, CIT480,                             #  S8
+    CIT499, CIT490 ]                                    #  S9
+
+BI:  
+  [ GEN110, GEN120, ARA130, GEN140, GEN150,              #  S1
+    ISL135, GEN145, GEN175, GEN185,GEN195,               #  S2
+    GEN220, HSS255, ENG240, CIT210, MTH215,              #  S3       
+    INS260, SEC235, MTH213, ACC202, SWE225,              #  S4
+    CIT300, CIT365, MGT209, FIN308, MKT210,              #  S5 
+    SWE320, SWE321, OPR300, HRM301, CIT466,ARA320,      #  S6
+    INS377, CIT460, CIT461, CIT470, INS467,              #  S7
+    INS476, INS477, CIT480, MKT433,                      #  S8
+    CIT499, CIT490 ]                                     #  S9
+
+MIS: 
+  [ GEN110, GEN120, ARA130, GEN140, GEN150,              #  S1
+    ISL135, GEN145, GEN175, GEN185,GEN195,               #  S2
+    GEN220, HSS255, ENG240, CIT210, MTH215,              #  S3       
+    INS260, SEC235, MTH213, ACC202, SWE225,              #  S4
+    CIT300, CIT365, MGT209, FIN308, INS361,              #  S5
+    HRM301, INS369, CIT372, OPR300, ARA320,              #  S6
+    INS377, CIT466, CIT460, INS410, SEC430,              #  S7
+    INS465, INS468, CIT480,                              #  S8
+    CIT499, CIT490 ]                                     #  S9
+
+ES:
+  [ GEN110, GEN120, ARA130, GEN140, GEN150,              #  S1
+    ISL135, GEN145, GEN175, GEN185,GEN195,               #  S2
+    GEN220, HSS255, ENG240, CIT210, MTH215,              #  S3       
+    INS260, SEC235, MTH213, ACC202, SWE225,              #  S4
+    CIT300, CIT365, MGT209, FIN308, INS361,              #  S5
+    IMT375, HRM301, INS362, OPR300, ARA320,              #  S6
+    INS377, CIT460, CIT466, INS369, INS468,              #  S7
+    INS463, INS492, CIT480,                              #  S8
+    CIT499, CIT490 ]                                     #  S9
+                                
+# Format: 
+#   Course_Group: [list_of_courses_which_can_satisfy_the_Group]
+#   Substituted_Course: [list_of_courses_which_can_substitute_the_course]
+Groups: { 
+  SEC330: [ SEC432],
+  SEC331: [ SEC433],
+}
+
+Rules: {
+}

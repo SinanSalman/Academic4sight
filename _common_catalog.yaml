@@ -1,0 +1,239 @@
+# ZU CTI Information Common to all Catalogs
+
+# Format: 
+#   number_of_CH: [list_of_ courses]
+#   default: Default_number_of_CH
+Course_CHs: {
+  0: [],
+  1: [  INS211, SWE321, CIT461, INS469, INS477, INS475, INS363, INS368, INS464, INS426,
+        NET257, SEC336, NET352, SEC433 ],
+  2: [],
+  4: [],
+  default: 3 
+}
+
+# Format: 
+#   course: co-requisite
+CoRequisites: {
+  SWE320: SWE321, 
+  CIT460: CIT461, 
+  INS467: INS469, 
+  INS476: INS477, 
+  INS474: INS475,
+  INS361: INS363,
+  INS369: INS368,
+  INS463: INS464,
+  INS425: INS426,
+  NET256: NET257,
+  SEC335: SEC336,
+  NET351: NET352,
+  SEC432: SEC433
+}
+
+# Format: 
+#   course: pre-requisite
+#   course-1 and course-2 are pre-requisite:  [course-1, Course-2]
+#   course-1  or course-2 are pre-requisite:  {a: course-1, b: Course-2}
+PreRequisites: {
+  ENG145: ENG140,
+  ENG240: ENG145,
+  CIT285: ENG240,
+  CIT305: CIT285,
+  HRM301: {a: CIT285, b: MGT209},
+  ACC202: {a: MTH213, b: GEN110},
+  OPR300: MTH213,
+  SWE225: MTH215,
+  CIT315: SWE225,
+  SWE245: SWE225,
+  SWE320: SWE225,
+  IMT340: SWE225,
+  IMT376: [SWE225, IMT375],
+  SWE371: SWE225,
+  SWE346: [CIT365, SWE245, SWE320],
+  MKT433: MKT210,
+  NET256: CIT210,
+  CIT372: {a: CIT210,  b:INS260},
+  NET351: [NET256, NET257],
+  #NET352: [NET257],
+  NET455: NET351,
+  SEC430: SEC235,
+  SEC335: [NET256, SEC235],
+  SEC432: [SEC335, SEC336],
+  SEC435: [SEC335, CIT315],
+  INS311: INS260,
+  CIT365: {a: INS260, b: CIT210},
+  INS377: {a: INS260, b: CIT210},
+  INS361: INS260,
+  INS369: INS260,
+  INS468: INS260,
+  INS492: INS260,
+  CIT460: CIT365,
+  CIT466: CIT365,
+  INS467: CIT365,
+  CIT470: CIT365,
+  INS425: CIT365,
+  INS465: CIT365,
+  INS476: CIT466,
+  INS474: CIT466,
+  INS463: CIT460,
+  INS362: INS361,
+  INS464: INS361,
+  INS410: {a: INS260, b: SEC235},
+  FIN308: [MTH213, ACC202]
+}
+
+# Key/important courses; pre-requisite courses will be added automatically; order counts
+Key_Courses: [ CIT466 ]
+
+# Format: 
+#   Course_Group: [list_of_courses_which_can_satisfy_the_Group]
+#   Substituted_Course: [list_of_courses_which_can_substitute_the_course]
+Groups: { 
+  GroupA: [ ARC212, GEN150, ISL209, PSY212 ],
+  GroupD: [ ENV240, GEN195, PBH267, PHY201 ],
+  GroupG: [ GEN185 ],
+
+  CIT300: [ CIT285 ],  # substitutions
+  MTH213: [ MTH281, ICS214 ],  # substitutions
+  MTH281: [ MTH213, ICS214 ],  # substitutions
+  HSS255: [ FYE125 ],  # substitutions
+  GEN110: [ FYE110 ],  # substitutions
+  GEN220: [ FYE150  ],  # substitutions
+  ISL135: [ FYE120 ],  # substitutions
+  #FYE140: [ GEN140, GEN145 ],  # will not work, because GEN140+GEN145 substitute FYE140
+
+  ARA130: [ FYE145, FYE146 ],  # substitutions -- FYE146 is equivalent to ARA130HL(130 for non-native)
+  GEN175: [ FYE195 ],  # substitutions
+  GEN120: [ ZU_Elective ],  # GEN120 is discontinued. Students should take a ZU Elective to substitute it. Needs memo -- to double check ??
+  GEN140: [ ENG140 ],
+  GEN145: [ ENG145 ],
+  #==========================================================================================
+  # -------------- For Students who transfered from ICS --------------------------------------
+  #-----------------------------------------------------------------------------------------
+  #---------------- NOTE: all these need to be double checked manually, as there might be ----
+  #--------------------- e.g., there is a differences between students: above 30 and below crd --------------
+  #ICS221: [ SWE245, INS311, INS211],  # substitutions SWE245 for CAT. For ISTM, it should substitute both 311 and 211
+  #ICS214: [ MTH281, MTH213],  # substitutions for CAT, ISTM (it should substitute 281 for CAT and 213 for ISTM)
+  MTH215: [ ICS215 ],  # substitutions for both CAT and ISTM
+  SEC235: [ ICS230 ],  # substitutions for both CAT
+  #ICS211: [ CIT210, INS260 ],  # substitutions CIT 210 for CAT and INS260 for ISTM
+  CIT210: [ ICS211 ],
+  INS260: [ ICS211 ],
+  #the following 5 courses should be ZU Electives for CAT, but specific substitutions for ISTM
+  #IBS210: [ ZU_Elective, MKT210 ],  # substitutions for CAT, ISTM
+  #IBS211: [ ZU_Elective, ACC202 ],  # substitutions for CAT, ISTM
+  #IBS214: [ ZU_Elective, HRM301 ],  # substitutions for CAT, ISTM
+  #IBS213: [ ZU_Elective, OPR300 ],  # substitutions for CAT, ISTM
+  #IBS212: [ ZU_Elective, MGT209 ],  # substitutions for CAT, ISTM
+
+  MKT210: [ IBS210 ],  # substitutions for CAT, ISTM
+  ACC202: [ IBS211 ],  # substitutions for CAT, ISTM
+  HRM301: [ IBS214 ],  # substitutions for CAT, ISTM
+  OPR300: [ IBS213 ],  # substitutions for CAT, ISTM
+  MGT209: [ IBS212 ],  # substitutions for CAT, ISTM
+
+  #GENED courses substitution 
+  CIT305: [ IAH244 ],
+  ENG240: [ ICB102 ],
+
+  #ICS220: [SWE225, SWE320, SWE321 ],  #**** students with this substitution applied need to be verified manually, 
+                                      #**** because for the substitution to take place, both ICB103 and ICS220 should be completed
+                                      #**** {ICB-103, ICS-220} ==> {SWE225, SWE320, SWE321}
+
+  #ICS360: [ NET256, NET255 ],
+  NET256: [ ICS360 ],
+  NET255: [ ICS360 ],
+  #-----------------------------------------------------------------------------------------
+  # -------------- End : For Students who transfered from ICS ------------------------------
+  #==========================================================================================
+
+  P_Elective: [ 
+    IMT375, SWE245, SWE371, CIT210, CIT305, CIT372, 
+    INS465, INS492, ACC203, FIN308, SEC430, NET255, NET256 ],
+
+  ZU_Elective: [ 
+    ANT261, ANT302, ANT362, ANT385, 
+    ARA211, ARA222, ARA235, ARA335, ARA380, 
+    ARM375, ARM395, 
+    ART201, ART205, ART220, ART221, ART251, 
+    CIT210, CIT480, 
+    COM200, COM230, COM240, 
+    EDC207, EDP202, EDP307, 
+    ENG240, ENG322, ENG331, ENG360, ENG363, ENG364, ENG365, ENG367, ENG368, 
+    ENV240, ENV241, 
+    FLS361, 
+    GEN110, 
+    GEN150, GEN175, GEN185, GEN195, GEN220, 
+    HIS321, HIS381, 
+    HSS101, HSS353, 
+    IMT375, 
+    INS260, 
+    ISC383, 
+    ISL209, ISL210, 
+    LAW200, LAW225, 
+    MGT209, MKT210, 
+    MTH103, MTH121, MTH213, MTH214, MTH215, MTH281, 
+    NET255, 
+    NUT205, 
+    PBH267, 
+    PHL201, 
+    PHY100, PHY210, 
+    POL227, POL335, 
+    PSY212, PSY363, 
+    SEC235, 
+    SOC326, SOC341, SOC374, 
+    EDC324, 
+    TCC371,
+    GEN175, MTH212, 
+    HIS201,   #It is added in Banner because it was in a previous catalogue, but it is not showing in 2024 catalog
+    TCC375    #It is added in Banner because it was in a previous catalogue, but it is not showing in 2024 catalog
+    ]
+}
+
+Rules: {
+  "CIT490 can only be one of the last two courses" : {
+    ECHiP: [114,999],
+    If_Not_Drop : [CIT490]
+  },
+  "CIT490 can only be taken alone or with CIT499" : {
+    ProjectionCount: [2,2],
+    MissingAny: [CIT499],
+    Drop : [CIT490]
+  },
+  "CIT499 min 105 earned CH" : {
+    ECHiP: [105,999],
+    If_Not_Drop : [CIT499]
+  },
+  "CIT499 can be taken with max 3 courses" : {
+    ProjectionCount: [1,4],
+    If_Not_Drop : [CIT499]
+  },
+  "Once a year, not offered course (AUH-Female)" : {
+    Campus: ["AUH - Women's Campus"],
+    Drop : [IMT345, INS465, INS492]
+  },
+  "Once a year, not offered course (AUH-Male)" : {
+    Campus: ["AUH - Men's Campus"],
+    Drop : [IMT345, IMT375]
+  },
+  "Only one MATH course-A" : {
+    MatchAll: [MTH213, MTH215],
+    Drop : [MTH213]
+  },
+  "Only one MATH course-B" : {
+    MatchAll: [MTH213, MTH281],
+    Drop : [MTH281]
+  },
+  "Only one MATH course-C" : {
+    MatchAll: [MTH215, MTH281],
+    Drop : [MTH281]
+  },
+  "Military Service Completed" : {
+  Status : ["Military Svc Completion (MC)"],
+  Note : "Military Svc Completion; FYE120 and FYE125 met"
+  },
+  "Non-Native Arabic Speakers" : {
+  Skill : [HT, NL],
+  Note : "Non-Native Arabic Speakers; need a memo"
+  }
+}
