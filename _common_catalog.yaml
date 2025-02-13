@@ -4,7 +4,7 @@
 #   number_of_CH: [list_of_ courses]
 #   default: Default_number_of_CH
 Course_CHs: {
-  0: [],
+  0: [  ADV100, ARA030, ALL040, AZU100, DMT010],
   1: [  INS211, SWE321, CIT461, INS469, INS477, INS475, INS363, INS368, INS464, INS426,
         NET257, SEC336, NET352, SEC433 ],
   2: [],
@@ -101,12 +101,15 @@ Groups: {
   GEN220: [ FYE150  ],  # substitutions
   ISL135: [ FYE120 ],  # substitutions
   #FYE140: [ GEN140, GEN145 ],  # will not work, because GEN140+GEN145 substitute FYE140
-
-  ARA130: [ FYE145, FYE146 ],  # substitutions -- FYE146 is equivalent to ARA130HL(130 for non-native)
+  ARA130: [ FYE145, FYE146, GEN130 ],  # substitutions -- FYE146 is equivalent to ARA130HL(130 for non-native)
   GEN175: [ FYE195 ],  # substitutions
   GEN120: [ ZU_Elective ],  # GEN120 is discontinued. Students should take a ZU Elective to substitute it. Needs memo -- to double check ??
   GEN140: [ ENG140 ],
   GEN145: [ ENG145 ],
+  ENG140: [ GEN140 ],
+  ENG145: [ GEN145 ],
+  ARA320: [ ARA345 ],
+  ARA345: [ ARA320 ],
   #==========================================================================================
   # -------------- For Students who transfered from ICS --------------------------------------
   #-----------------------------------------------------------------------------------------
@@ -235,5 +238,10 @@ Rules: {
   "Non-Native Arabic Speakers" : {
   Skill : [HT, NL],
   Note : "Non-Native Arabic Speakers; need a memo"
+  },
+  "NotInPlan courses may be counted as elective or substitute discontinued course" : {
+    NotInPlanCount: [1,999],
+    MatchAny: [ZU_Elective, P_Elective, HIS-251],
+    Note : "Check if NotInPlan course(s) can be counted as elective or substitute a discontinued course."
+  },
   }
-}

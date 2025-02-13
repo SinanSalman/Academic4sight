@@ -214,7 +214,7 @@ Rules:
   }
 ```
 
-***CONDITION***: `Status`, `Skill`, `Campus`, `ProjectionCount`, `ECHiP`, `MatchAll`, `MatchAny`, and `MissingAny`
+***CONDITION***: `Status`, `Skill`, `Campus`, `ProjectionCount`, `ECHiP`, `MatchAll`, `MatchAny`, `MissingAny`, and `NotInPlanCount`
 
 ***ACTIONS***: `Drop`, `If_Not_Drop`, and `Note`
 

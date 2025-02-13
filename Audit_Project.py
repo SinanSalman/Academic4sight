@@ -4,6 +4,7 @@
 License:    GPLv3
 
 Version History:
+13.02.2025  1.6     when concentration is missing, use major; when adding a co-req, ensure it is not taken/registered
 31.01.2025  1.51    updated readme.md and created github
 16.12.2024	1.5     fixed a bug; set() are not ordered while lists are. Replaced sets with ordered lists and introduced a function to remove duplicates from lists.
 12.12.2024	1.4     fixed a bug; if the course was listed in current courses and completed courses, it was checked twice, with the second check resulting in an uncounted course.
@@ -116,7 +117,7 @@ def get_course_CHs(course, Course_CHs):
     return getattr(Course_CHs, 'default', 3)
 
 
-def apply_rule(rules, rec,  CH_earned,  Projected_Courses,  Must_take_Courses):
+def apply_rule(rules, rec,  CH_earned,  Projected_Courses,  Must_take_Courses, not_in_plan):
     applied_rules = []
     for label, rule in rules.items():
         applicable = True
@@ -168,6 +169,11 @@ def apply_rule(rules, rec,  CH_earned,  Projected_Courses,  Must_take_Courses):
                     applicable &= True
                 else:
                     applicable &= False
+            if k == 'NotInPlanCount':
+                if v[0] <= len(not_in_plan) <= v[1]:
+                    applicable &= True
+                else:
+                    applicable &= False
         Dropped_Courses = set()
         v = []
         if ('Drop' in rule.keys() and applicable):
@@ -190,9 +196,6 @@ def apply_rule(rules, rec,  CH_earned,  Projected_Courses,  Must_take_Courses):
 
 def audit_student_registration(record, catalog_year, concentration):
     global catalogs
-
-    if record['ID'] == 201934209:  # for tracing/debugging purposes
-        pass
 
     # setup variables
     rec = record.to_dict()
@@ -328,7 +331,8 @@ def audit_student_registration(record, catalog_year, concentration):
                            rec, 
                            CH_earned, 
                            Projected_Courses, 
-                           Must_take_Courses)
+                           Must_take_Courses,
+                           not_in_plan)
 
     Projected_Courses = list(Projected_Courses)[:config['Number_Projection_Courses']]
     Must_take_Courses = list(Must_take_Courses)[:config['Number_Key_Courses']]
@@ -358,7 +362,9 @@ def audit_student_registration(record, catalog_year, concentration):
             coreq = CoRequisites[course]
             if not isinstance(coreq, str):
                 raise ValueError(f'Error - unidentified format for co-req: {course}:{coreq}')
-            if coreq not in total_registration and coreq not in add_courses:
+            if coreq not in total_registration and \
+                    coreq not in add_courses and \
+                    coreq not in taken:
                 add_courses.append(coreq)
                 add_co_requisites.append(coreq)
                 add_CH += get_course_CHs(coreq, Course_CHs)
@@ -388,6 +394,13 @@ if __name__ == "__main__":
     # if config['Registration_Data']:
     #     df_Registration_Data = load_data(config['Registration_Data'])
     #     df = pd.merge(df, df_Registration_Data[['FailedCourses', 'Registered_Summer']], on="ID")
+
+    no_concentration_mask = df['Concentration'].isnull()
+    no_concentration_count = no_concentration_mask.sum()
+    if no_concentration_count > 0:
+        print_log(f'Info: found {no_concentration_count} records students with "Null" Concentrations, using Major instead.', verbose_to_screen = True)
+        df.loc[no_concentration_mask,'Concentration'] = df.loc[no_concentration_mask,'Major']
+
     output_columns = ['Audit_taken', 'Audit_satisfy_groups', 'Audit_uncounted', 
                       'Audit_Remaining_in_plan','Audit_unsatisfied_PreReq',
                       'Audit_Projected_Courses', 'Audit_Must_take_Courses', 
@@ -399,10 +412,6 @@ if __name__ == "__main__":
     warnings = []
 
     for index, row in df.iterrows():
-
-        # if row["ID"] not in [202106299,]:
-        #     continue
-
         n += 1
         print_log(f'{"-"*80}\n*** Processing student ID: {row["ID"]}', verbose_to_screen = verbose)
 
@@ -418,12 +427,12 @@ if __name__ == "__main__":
         # check if catalog data is available first
         msg = ''
         if catalog_year not in catalogs.keys():
-            warnings.append(f'Students with unrecognized catalog year: {catalog_year}')
-            df.loc[index,['Audit_taken']] = f'Warning: unrecognized catalog year: {catalog_year}'
+            warnings.append(f'Students with unrecognized catalog year: {catalog_year}. Excluded from analysis.')
+            df.loc[index,['Audit_taken']] = f'Warning: unrecognized catalog year: {catalog_year}. Excluded from analysis.'
             continue
         if concentration not in catalogs[catalog_year].keys():
-            warnings.append(f'Students with unrecognized concentration: {concentration}')
-            df.loc[index,['Audit_taken']] = f'Warning: unrecognized concentration: {concentration}'
+            warnings.append(f'Students with unrecognized concentration: {concentration}. Excluded from analysis.')
+            df.loc[index,['Audit_taken']] = f'Warning: unrecognized concentration: {concentration}. Excluded from analysis.'
             continue
 
         # Audit

@@ -11,7 +11,6 @@ Number_Key_Courses:        3
 Concentrations: { 
   "Security and Network Tech" : "SECNET",
   "Security and Network Tech (_SN)" : "SECNET",
-  "Cyber Security SPZ (_CY)": "SECNET",
   "Web and Mobile App Development" : "WAM",
   "Web and Mobile App Development (_WM)" : "WAM",
   "Business Intelligence" : "BI",
@@ -19,7 +18,10 @@ Concentrations: {
   "Enterprise Systems" : "ES",
   "Enterprise Systems (_ES)" : "ES",
   "Mgmt. of Information Systems" : "MIS",
-  "Mgmt. of Information Systems (_MS)" : "MIS"
+  "Mgmt. of Information Systems (_MS)" : "MIS",
+
+  "Cyber Security SPZ (_CY)": "MS.CyberSecurity",
+  "Information Technology (MINT)": "MS.DTI"
 }
 
 Equal_Catalog_Years: {
