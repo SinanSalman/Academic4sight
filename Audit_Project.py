@@ -4,7 +4,7 @@
 License:    GPLv3
 
 Version History:
-13.02.2025  1.6     when concentration is missing, use major; when adding a co-req, ensure it is not taken/registered
+14.02.2025  1.61    fixed a bug; do not add a failed course to Projected_Courses & Must_take_Courses if it is already registered
 31.01.2025  1.51    updated readme.md and created github
 16.12.2024	1.5     fixed a bug; set() are not ordered while lists are. Replaced sets with ordered lists and introduced a function to remove duplicates from lists.
 12.12.2024	1.4     fixed a bug; if the course was listed in current courses and completed courses, it was checked twice, with the second check resulting in an uncounted course.
@@ -266,7 +266,8 @@ def audit_student_registration(record, catalog_year, concentration):
     print_log(f'            Concentration: {concentration}', verbose_to_screen = verbose)
     print_log(f'            Taken courses: {", ".join(taken)}', verbose_to_screen = verbose)
     print_log(f'         Satisfies groups: {", ".join(satisfy_groups)}', verbose_to_screen = verbose)
-    print_log(f'                Uncounted: {", ".join(not_in_plan)}', verbose_to_screen = verbose)
+    print_log(f'           Failed courses: {", ".join(FailedCourses)}', verbose_to_screen = verbose)
+    print_log(f'        Uncounted courses: {", ".join(not_in_plan)}', verbose_to_screen = verbose)
 
     # remove courses from plan when they have unsatisfied pre-requisites
     courses_w_unsatisfied_prereqs = []
@@ -306,11 +307,13 @@ def audit_student_registration(record, catalog_year, concentration):
     # prep Projected & Must_take_Courses
     Projected_Courses = []
     Must_take_Courses = []
+    total_registration = no_duplicates_ordered_list(Registered + Registered_Summer)
     for course in FailedCourses:  # start w/ failed courses
-        if course not in Projected_Courses:
-            Projected_Courses.append(course)
-        if course not in Must_take_Courses:
-            Must_take_Courses.append(course)
+        if course not in total_registration:  # if already registered for, skip
+            if course not in Projected_Courses:
+                Projected_Courses.append(course)
+            if course not in Must_take_Courses:
+                Must_take_Courses.append(course)
     for course in cat:  # add remaining courses from plan
         if course not in Projected_Courses:
             Projected_Courses.append(course)
@@ -347,7 +350,6 @@ def audit_student_registration(record, catalog_year, concentration):
     add_courses = []
     add_CH = 0
     minCH = 14 if rec['cGPA']>2 else 11  # need to make this parametrized
-    total_registration = no_duplicates_ordered_list(Registered + Registered_Summer)
     for course in no_duplicates_ordered_list(Must_take_Courses + Projected_Courses):
         if CH_registered+add_CH < minCH:
             if course not in total_registration and course not in add_courses:
