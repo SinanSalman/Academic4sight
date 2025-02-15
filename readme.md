@@ -247,7 +247,7 @@ Recommended courses to complete each student's enrollment to the minimum Credit 
 To run the script, use the following command:
 
 ```sh
-python Audit.py
+python Audit_Forecast.py
 ```
 
 ### Output
