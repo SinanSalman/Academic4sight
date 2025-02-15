@@ -1,7 +1,7 @@
 # sensitive data
 Student Records Information - Faculty Access Portal.xlsx
 StudentsAudit.txt
-StudentsAudit.xlsx
+*.xlsx
 
 .DS_Store
 launch.json

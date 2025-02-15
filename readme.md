@@ -60,11 +60,13 @@ catalog_defaults: "_common_catalog.yaml"
 
 ```yaml
 Input_Data_File: "Students.xlsx"
-Output_Data_File: "StudentsAudit.xlsx"
+Audit_Output_File: "StudentsAudit.xlsx"
+Forecast_Output_File: "StudentsForecast.xlsx"
 ```
 
 - **Input_Data_File**: The Excel file containing student data.
-- **Output_Data_File**: The Excel file where the audited student data will be saved.
+- **Audit_Output_File**: The Excel file where the audited student data will be saved.
+- **Forecast_Output_File**: The Excel file where the forecast summary will be saved.
 
 #### Projection Parameters
 ```yaml
@@ -233,10 +235,10 @@ The script is designed to be executed as a standalone program. The main steps ar
     - Generate a list of additional courses needed to meet the minimum credit hour requirement.
     - Include co-requisite courses if necessary.
     - Save a summary of the student's academic plan.
-5. Tally students' projections
+5. Tally students' recommended courses (from add_courses) into a pivot table
 
 ## Forecasting Student Enrolment Demand
- ToDo...
+Recommended courses to complete each student's enrollment to the minimum Credit Hours are tallied and summarized into a pivot table. The resulting summary table is saved into an Excel output file dictated by the `Forecast_Output_File` parameter.
 
 ## Usage
 

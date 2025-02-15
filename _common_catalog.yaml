@@ -239,7 +239,7 @@ Rules: {
   Skill : [HT, NL],
   Note : "Non-Native Arabic Speakers; need a memo"
   },
-  "NotInPlan courses may be counted as elective or substitute discontinued course" : {
+  "Uncounted (NotInPlan) courses may be counted as elective or substitute discontinued course" : {
     NotInPlanCount: [1,999],
     MatchAny: [ZU_Elective, P_Elective, HIS-251],
     Note : "Check if NotInPlan course(s) can be counted as elective or substitute a discontinued course."

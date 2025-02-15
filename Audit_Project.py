@@ -4,6 +4,7 @@
 License:    GPLv3
 
 Version History:
+15.02.2025  2.0     New feature: forecasting using "add_courses"
 14.02.2025  1.61    fixed a bug; do not add a failed course to Projected_Courses & Must_take_Courses if it is already registered
 31.01.2025  1.51    updated readme.md and created github
 16.12.2024	1.5     fixed a bug; set() are not ordered while lists are. Replaced sets with ordered lists and introduced a function to remove duplicates from lists.
@@ -24,6 +25,9 @@ from collections import Counter
 Required_Columns = ['ID','Catalog','Concentration','Campus','cGPA',
                     'CompletedCourses','CurrentCourses','FailedCourses',
                     'Registered','Registered_Summer', 'Skill']
+Forecast_Columns = ['ID', 'Status', 'Standing', 'Campus', 'Catalog', 'College',
+                    'Degree', 'Major', 'Concentration', 'Program', 'Current Credits',
+                    'Earned Hours', 'GPA Hours', 'cGPA', 'Skill']
 log_text = ''
 
 def print_log(log_entry, verbose_to_screen = False):
@@ -265,9 +269,9 @@ def audit_student_registration(record, catalog_year, concentration):
     print_log(f'                  Catalog: {catalog_year}', verbose_to_screen = verbose)
     print_log(f'            Concentration: {concentration}', verbose_to_screen = verbose)
     print_log(f'            Taken courses: {", ".join(taken)}', verbose_to_screen = verbose)
-    print_log(f'         Satisfies groups: {", ".join(satisfy_groups)}', verbose_to_screen = verbose)
+    print_log(f'         Satisfied groups: {", ".join(satisfy_groups)}', verbose_to_screen = verbose)
     print_log(f'           Failed courses: {", ".join(FailedCourses)}', verbose_to_screen = verbose)
-    print_log(f'        Uncounted courses: {", ".join(not_in_plan)}', verbose_to_screen = verbose)
+    print_log(f'    Uncounted (NotInPlan): {", ".join(not_in_plan)}', verbose_to_screen = verbose)
 
     # remove courses from plan when they have unsatisfied pre-requisites
     courses_w_unsatisfied_prereqs = []
@@ -341,7 +345,7 @@ def audit_student_registration(record, catalog_year, concentration):
     Must_take_Courses = list(Must_take_Courses)[:config['Number_Key_Courses']]
 
     print_log(f'\nApplied rules:\n\t{rules_msg}\n', verbose_to_screen = verbose)
-    print_log(f'      Plan courses: {", ".join(cat+courses_w_unsatisfied_prereqs)}', verbose_to_screen = verbose)
+    print_log(f' Remaining in plan: {", ".join(cat+courses_w_unsatisfied_prereqs)}', verbose_to_screen = verbose)
     print_log(f'unsatisfied PreReq: {", ".join(courses_w_unsatisfied_prereqs_and_why)}\n', verbose_to_screen = verbose)
     print_log(f' Projected courses: {", ".join(Projected_Courses)}', verbose_to_screen = verbose)
     print_log(f' Must take courses: {", ".join(Must_take_Courses)}', verbose_to_screen = verbose)
@@ -387,11 +391,14 @@ def audit_student_registration(record, catalog_year, concentration):
         'Courses_to_add_CH': str(add_CH),
         'CH_earned': str(CH_earned),
         'CH_registered': str(CH_registered),
-        'Applied_Rules': rules_msg}
+        'Applied_Rules': rules_msg}, \
+        add_courses
 
 if __name__ == "__main__":
     n = 0
     df = load_data(config['Input_File'])
+    df_forecast = pd.DataFrame({k: pd.Series(dtype=df[k].dtype) for k in Forecast_Columns})
+
     # get additional end_of_semester data for columns not in FAP: FailedCourses, Registered_Summer
     # if config['Registration_Data']:
     #     df_Registration_Data = load_data(config['Registration_Data'])
@@ -413,6 +420,7 @@ if __name__ == "__main__":
         df[c] = ''
     warnings = []
 
+    course_list = set()
     for index, row in df.iterrows():
         n += 1
         print_log(f'{"-"*80}\n*** Processing student ID: {row["ID"]}', verbose_to_screen = verbose)
@@ -438,11 +446,20 @@ if __name__ == "__main__":
             continue
 
         # Audit
-        R = audit_student_registration(row, catalog_year, concentration)
+        R, add_courses = audit_student_registration(row, catalog_year, concentration)
         df.loc[index,output_columns] = R.values()
 
-    df.to_excel(config['Output_File'])
+        # Forecast
+        df_forecast.loc[index,Forecast_Columns] = df.loc[index,Forecast_Columns]
+        for c in add_courses:
+            course_list.add(c)
+            df_forecast.loc[index,c] = 1
 
+    df.to_excel(config['Audit_Output_File'])
+    course_list = sorted(list(course_list))
+    grouped_forecast = df_forecast.groupby(by='Campus')[course_list].count().transpose()
+    grouped_forecast.to_excel(config['Forecast_Output_File'])
+    
     warnings = Counter(warnings)
     if warnings:
         print_log(f'The following warnings were present:', verbose_to_screen = True)
@@ -452,5 +469,5 @@ if __name__ == "__main__":
     tok = time.time()
     print_log(f'\nProcessed {n} students in {round(tok-tik)} seconds\n', verbose_to_screen = True)
 
-    with open(config['Output_File'][0:-5]+'.txt','w') as log_file:
+    with open(config['Audit_Output_File'][0:-5]+'.txt','w') as log_file:
         log_file.write(log_text)
