@@ -5,12 +5,12 @@ License:    GPLv3
 
 Version History:
 18.02.2025  2.1     bug fix; new students' MinCH=15; failed courses enrolled now should not appear in projection
-15.02.2025  2.0     New feature: forecasting using "add_courses"
-14.02.2025  1.61    fixed a bug; do not add a failed course to Projected_Courses & Must_take_Courses if it is already registered
+15.02.2025  2.0     new feature: forecasting using "add_courses"
+14.02.2025  1.61    bug fix; do not add a failed course to Projected_Courses & Must_take_Courses if it is already registered
 31.01.2025  1.51    updated readme.md and created github
-16.12.2024	1.5     fixed a bug; set() are not ordered while lists are. Replaced sets with ordered lists and introduced a function to remove duplicates from lists.
-12.12.2024	1.4     fixed a bug; if the course was listed in current courses and completed courses, it was checked twice, with the second check resulting in an uncounted course.
-11.12.2024	1.3     added a "common_catalog" yaml default file and a rule for adding comments; Verbose configuration affects screen, not log file
+16.12.2024	1.5     bug fix; set() are not ordered while lists are. Replaced sets with ordered lists and introduced a function to remove duplicates from lists.
+12.12.2024	1.4     bug fix; if the course was listed in current courses and completed courses, it was checked twice, with the second check resulting in an uncounted course.
+11.12.2024	1.3     new feature; added a "common_catalog" yaml default file and a rule for adding comments; Verbose configuration affects screen, not log file
 06.12.2024	1.2     improved logic; fixed rules bugs; checks for co-reqs in projection; added log_file
 29.05.2024	1.1     improved logic, format, and added rules
 20.05.2024	1.0     initial release"""
