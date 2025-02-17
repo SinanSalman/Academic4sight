@@ -1,6 +1,5 @@
-# sensitive data
-Student Records Information - Faculty Access Portal.xlsx
-StudentsAudit.txt
+# sensitive data (input/output files)
+*.txt
 *.xlsx
 
 .DS_Store

@@ -4,6 +4,7 @@
 License:    GPLv3
 
 Version History:
+18.02.2025  2.1     bug fix; new students' MinCH=15; failed courses enrolled now should not appear in projection
 15.02.2025  2.0     New feature: forecasting using "add_courses"
 14.02.2025  1.61    fixed a bug; do not add a failed course to Projected_Courses & Must_take_Courses if it is already registered
 31.01.2025  1.51    updated readme.md and created github
@@ -20,7 +21,8 @@ import glob
 import copy
 import time
 from collections import Counter
-
+from warnings import simplefilter
+simplefilter(action="ignore", category=pd.errors.PerformanceWarning)  # added to ignore "PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`"
 
 Required_Columns = ['ID','Catalog','Concentration','Campus','cGPA',
                     'CompletedCourses','CurrentCourses','FailedCourses',
@@ -267,6 +269,7 @@ def audit_student_registration(record, catalog_year, concentration):
                 not_in_plan.append(course)
 
     print_log(f'                  Catalog: {catalog_year}', verbose_to_screen = verbose)
+    print_log(f'                     cGPA: {rec['cGPA']}', verbose_to_screen = verbose)
     print_log(f'            Concentration: {concentration}', verbose_to_screen = verbose)
     print_log(f'            Taken courses: {", ".join(taken)}', verbose_to_screen = verbose)
     print_log(f'         Satisfied groups: {", ".join(satisfy_groups)}', verbose_to_screen = verbose)
@@ -303,15 +306,16 @@ def audit_student_registration(record, catalog_year, concentration):
     for c in taken:
         CH_earned += get_course_CHs(c, Course_CHs)
 
-    print_log(f'Registered Summer Courses: {rec["Registered_Summer"]}', verbose_to_screen = verbose)
-    print_log(f'       Registered Courses: {rec["Registered"]}', verbose_to_screen = verbose)
+    print_log(f'          Current Courses: {", ".join(CurrentCourses)}', verbose_to_screen = verbose)
+    print_log(f'Registered Summer Courses: {", ".join(Registered_Summer)}', verbose_to_screen = verbose)
+    print_log(f'       Registered Courses: {", ".join(Registered)}', verbose_to_screen = verbose)
     print_log(f'           Registered CHs: {CH_registered}', verbose_to_screen = verbose)
     print_log(f'               Earned CHs: {CH_earned}', verbose_to_screen = verbose)
 
     # prep Projected & Must_take_Courses
     Projected_Courses = []
     Must_take_Courses = []
-    total_registration = no_duplicates_ordered_list(Registered + Registered_Summer)
+    total_registration = no_duplicates_ordered_list(Registered + Registered_Summer + CurrentCourses)
     for course in FailedCourses:  # start w/ failed courses
         if course not in total_registration:  # if already registered for, skip
             if course not in Projected_Courses:
@@ -353,7 +357,14 @@ def audit_student_registration(record, catalog_year, concentration):
     # prep list of courses to add
     add_courses = []
     add_CH = 0
-    minCH = 14 if rec['cGPA']>2 else 11  # need to make this parametrized
+    if rec['cGPA'] > 2:  # need to make this and the minCH parametrized
+        minCH = 14
+    else:
+        if rec['cGPA'] == 0 and rec['Earned Hours'] == 0 and len(FailedCourses) == 0:
+            minCH = 14
+        else:
+            minCH = 11
+
     for course in no_duplicates_ordered_list(Must_take_Courses + Projected_Courses):
         if CH_registered+add_CH < minCH:
             if course not in total_registration and course not in add_courses:
@@ -458,8 +469,8 @@ if __name__ == "__main__":
     df.to_excel(config['Audit_Output_File'])
     course_list = sorted(list(course_list))
     grouped_forecast = df_forecast.groupby(by='Campus')[course_list].count().transpose()
-    grouped_forecast.to_excel(config['Forecast_Output_File'])
-    
+    grouped_forecast.to_excel(config['Forecast_Output_File_sum'])
+    df_forecast.to_excel(config['Forecast_Output_File_det'])
     warnings = Counter(warnings)
     if warnings:
         print_log(f'The following warnings were present:', verbose_to_screen = True)

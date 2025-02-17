@@ -96,20 +96,25 @@ Groups: {
   CIT300: [ CIT285 ],  # substitutions
   MTH213: [ MTH281, ICS214 ],  # substitutions
   MTH281: [ MTH213, ICS214 ],  # substitutions
-  HSS255: [ FYE125 ],  # substitutions
-  GEN110: [ FYE110 ],  # substitutions
+  HSS255: [ FYE125, GEN255 ],  # substitutions
+  GEN110: [ FYE110, COL110 ],  # substitutions
   GEN220: [ FYE150  ],  # substitutions
-  ISL135: [ FYE120 ],  # substitutions
+  ISL135: [ FYE120, GEN135, COL135 ],  # substitutions
   #FYE140: [ GEN140, GEN145 ],  # will not work, because GEN140+GEN145 substitute FYE140
-  ARA130: [ FYE145, FYE146, GEN130 ],  # substitutions -- FYE146 is equivalent to ARA130HL(130 for non-native)
+  ARA130: [ FYE145, FYE146, GEN130, COL130 ],  # substitutions -- FYE146 is equivalent to ARA130HL(130 for non-native)
   GEN175: [ FYE195 ],  # substitutions
-  GEN120: [ ZU_Elective ],  # GEN120 is discontinued. Students should take a ZU Elective to substitute it. Needs memo -- to double check ??
-  GEN140: [ ENG140 ],
+  GEN120: [ ZU_Elective, COL120 ],  # GEN120 is discontinued. Students should take a ZU Elective to substitute it. Needs memo -- to double check ??
+  GEN140: [ ENG140, COL140 ],
   GEN145: [ ENG145 ],
   ENG140: [ GEN140 ],
   ENG145: [ GEN145 ],
   ARA320: [ ARA345 ],
   ARA345: [ ARA320 ],
+  MGT309: [ MGT209 ],
+  GEN130: [ COL130 ],
+  GEN150: [ COL150 ],
+  GEN135: [ COL135 ],
+  EWS240: [ ENG240 ],
   #==========================================================================================
   # -------------- For Students who transfered from ICS --------------------------------------
   #-----------------------------------------------------------------------------------------
@@ -133,7 +138,7 @@ Groups: {
   ACC202: [ IBS211 ],  # substitutions for CAT, ISTM
   HRM301: [ IBS214 ],  # substitutions for CAT, ISTM
   OPR300: [ IBS213 ],  # substitutions for CAT, ISTM
-  MGT209: [ IBS212 ],  # substitutions for CAT, ISTM
+  MGT209: [ IBS212, MGT309 ],  # substitutions for CAT, ISTM. MGT209--MGT309 is common for all, not related to CIS substitutions
 
   #GENED courses substitution 
   CIT305: [ IAH244 ],
@@ -189,7 +194,9 @@ Groups: {
     TCC371,
     GEN175, MTH212, 
     HIS201,   #It is added in Banner because it was in a previous catalogue, but it is not showing in 2024 catalog
-    TCC375    #It is added in Banner because it was in a previous catalogue, but it is not showing in 2024 catalog
+    TCC375,    #It is added in Banner because it was in a previous catalogue, but it is not showing in 2024 catalog
+    HIS251, HIS204, #counted as Zu- elective in catalog 2019 
+    HIS303 #???
     ]
 }
 
@@ -239,9 +246,30 @@ Rules: {
   Skill : [HT, NL],
   Note : "Non-Native Arabic Speakers; need a memo"
   },
-  "Uncounted (NotInPlan) courses may be counted as elective or substitute discontinued course" : {
+  "NotInPlan courses may be counted as elective or substitute discontinued course" : {
     NotInPlanCount: [1,999],
     MatchAny: [ZU_Elective, P_Elective, HIS-251],
     Note : "Check if NotInPlan course(s) can be counted as elective or substitute a discontinued course."
   },
   }
+#Added
+#[HSS255 <--> GEN255]
+#[ISL135 <--> GEN135]
+#[ MGT309 <--> MGT209]
+#[GEN110 <--> COL110]
+#[GEN120 <--> COL120]
+#[GEN130 <--> COL130]
+#[ARA130 <--> COL130, GEN130]
+#[GEN140 <--> COL140]
+#[GEN150 <--> COL150]
+#[GEN135 <--> COL135]
+#[EWS240 <--> ENG240]
+#[ GEN120 <-- ZU Elective] : included but not working ????
+#[ <-->]
+#HIS251, HIS204 counted as Zu- elective (catalog 2019 )
+#[ ZU Elective <-- HIS303] which catalog??
+#ARAbic for HT still same not replaced with Elective ??
+#Failed course and registered in it now ??
+#201918016	CIT490		GEN120	GEN120 Sub by INS311
+#ENG240 prereq
+#
