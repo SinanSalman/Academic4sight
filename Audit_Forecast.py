@@ -4,7 +4,8 @@
 License:    GPLv3
 
 Version History:
-18.02.2025  2.11    improved logic; some courses (e.g., GroupA or Elective) can repeat, others not
+21.02.2025  2.12    fixed bug; add pre-req only if it is in the student catalog, if not, it is not required to be taken
+21.02.2025  2.11    improved logic; some courses (e.g., GroupA or Elective) can repeat, others not
 18.02.2025  2.1     bug fix; new students' MinCH=15; failed courses enrolled now should not appear in projection
 15.02.2025  2.0     new feature: forecasting using "add_courses"
 14.02.2025  1.61    bug fix; do not add a failed course to Projected_Courses & Must_take_Courses if it is already registered
@@ -385,9 +386,10 @@ def audit_student_registration(record, catalog_year, concentration):
             if coreq not in total_registration and \
                     coreq not in add_courses and \
                     coreq not in taken:
-                add_courses.append(coreq)
-                add_co_requisites.append(coreq)
-                add_CH += get_course_CHs(coreq, Course_CHs)
+                if coreq in cat:
+                    add_courses.append(coreq)
+                    add_co_requisites.append(coreq)
+                    add_CH += get_course_CHs(coreq, Course_CHs)
 
     print_log(f'       add_courses: {", ".join(add_courses)}', verbose_to_screen = verbose)
     # print_log(f'     added co-reqs: {", ".join(add_co_requisites)}', verbose_to_screen = verbose)
