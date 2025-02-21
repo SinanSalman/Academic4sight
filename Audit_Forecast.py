@@ -4,6 +4,7 @@
 License:    GPLv3
 
 Version History:
+18.02.2025  2.11    improved logic; some courses (e.g., GroupA or Elective) can repeat, others not
 18.02.2025  2.1     bug fix; new students' MinCH=15; failed courses enrolled now should not appear in projection
 15.02.2025  2.0     new feature: forecasting using "add_courses"
 14.02.2025  1.61    bug fix; do not add a failed course to Projected_Courses & Must_take_Courses if it is already registered
@@ -47,6 +48,7 @@ def read_yaml(filename):
 
 def no_duplicates_ordered_list(list_with_duplicates):
     return list(dict.fromkeys(list_with_duplicates).keys())
+
 
 def clean_course_code(course):
     return course.replace('-','').strip()[:6]
@@ -323,7 +325,7 @@ def audit_student_registration(record, catalog_year, concentration):
             if course not in Must_take_Courses:
                 Must_take_Courses.append(course)
     for course in cat:  # add remaining courses from plan
-        if course not in Projected_Courses:
+        if course not in Projected_Courses or course in config['Allowed_Duplicate_Courses']:
             Projected_Courses.append(course)
         if course in Key_Courses and course not in Must_take_Courses:
             Must_take_Courses.append(course)
@@ -365,11 +367,12 @@ def audit_student_registration(record, catalog_year, concentration):
         else:
             minCH = 11
 
-    for course in no_duplicates_ordered_list(Must_take_Courses + Projected_Courses):
+    for course in Must_take_Courses + Projected_Courses:
         if CH_registered+add_CH < minCH:
-            if course not in total_registration and course not in add_courses:
-                add_courses.append(course)
-                add_CH += get_course_CHs(course, Course_CHs)
+            if course not in total_registration:
+                if course not in add_courses or course in config['Allowed_Duplicate_Courses']:
+                    add_courses.append(course)
+                    add_CH += get_course_CHs(course, Course_CHs)
 
     # include co-requisites
     add_co_requisites = []

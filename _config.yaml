@@ -10,6 +10,8 @@ Forecast_Output_File_det:   "StudentsForecast_details.xlsx"
 Number_Projection_Courses:  10
 Number_Key_Courses:         3
 
+Allowed_Duplicate_Courses: [ GroupA, GroupD, GroupG, P_Elective, ZU_Elective ]
+
 Concentrations: { 
   "Security and Network Tech" : "SECNET",
   "Security and Network Tech (_SN)" : "SECNET",
