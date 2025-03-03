@@ -4,7 +4,9 @@
 License:    GPLv3
 
 Version History:
-18.02.2025  2.11    improved logic; some courses (e.g., GroupA or Elective) can repeat, others not
+03.02.2025  3.0     new feature; added stochastic forecasting
+21.02.2025  2.12    fixed bug; add pre-req only if it is in the student catalog, if not, it is not required to be taken
+21.02.2025  2.11    improved logic; some courses (e.g., GroupA or Elective) can repeat, others not
 18.02.2025  2.1     bug fix; new students' MinCH=15; failed courses enrolled now should not appear in projection
 15.02.2025  2.0     new feature: forecasting using "add_courses"
 14.02.2025  1.61    bug fix; do not add a failed course to Projected_Courses & Must_take_Courses if it is already registered
@@ -22,8 +24,10 @@ import glob
 import copy
 import time
 from collections import Counter
+from tqdm import tqdm
+# added below to ignore "PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`"
 from warnings import simplefilter
-simplefilter(action="ignore", category=pd.errors.PerformanceWarning)  # added to ignore "PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`"
+simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
 Required_Columns = ['ID','Catalog','Concentration','Campus','cGPA',
                     'CompletedCourses','CurrentCourses','FailedCourses',
@@ -58,6 +62,7 @@ tik = time.time()
 config_filename = '_config.yaml'
 config = read_yaml(config_filename)
 verbose = config['Verbose']
+# use catalog_defaults as a base and update with each catalog file
 catalog_defaults = read_yaml(config['catalog_defaults'])
 catalogs = {}
 for filename in glob.glob(config['catalog_filenames']):
@@ -233,7 +238,7 @@ def audit_student_registration(record, catalog_year, concentration):
     CoRequisites = copy.deepcopy(catalogs[catalog_year]["CoRequisites"])
     PreRequisites = copy.deepcopy(catalogs[catalog_year]["PreRequisites"])
 
-    #  Collapse all Pre-Reqs into a flat list and add to Key_Courses
+    #  Collapse all Pre-Reqs into a flat list to add to Key_Courses
     Key_Courses = catalogs[catalog_year]['Key_Courses'].copy()
     for PreReq in PreRequisites.values():
         if isinstance(PreReq, str): # one course
@@ -303,7 +308,7 @@ def audit_student_registration(record, catalog_year, concentration):
     # calculate registered & earned CH
     CH_registered = 0
     CH_earned = 0
-    for c in Registered:
+    for c in Registered + Registered_Summer:
         CH_registered += get_course_CHs(c, Course_CHs)
     for c in taken:
         CH_earned += get_course_CHs(c, Course_CHs)
@@ -347,6 +352,9 @@ def audit_student_registration(record, catalog_year, concentration):
                            Must_take_Courses,
                            not_in_plan)
 
+
+    Projected_Courses_extended = Projected_Courses.copy()
+    Must_take_Courses_extended = Must_take_Courses.copy()
     Projected_Courses = list(Projected_Courses)[:config['Number_Projection_Courses']]
     Must_take_Courses = list(Must_take_Courses)[:config['Number_Key_Courses']]
 
@@ -358,6 +366,7 @@ def audit_student_registration(record, catalog_year, concentration):
 
     # prep list of courses to add
     add_courses = []
+    add_co_requisites = []
     add_CH = 0
     if rec['cGPA'] > 2:  # need to make this and the minCH parametrized
         minCH = 14
@@ -368,30 +377,64 @@ def audit_student_registration(record, catalog_year, concentration):
             minCH = 11
 
     for course in Must_take_Courses + Projected_Courses:
-        if CH_registered+add_CH < minCH:
+        if CH_registered + add_CH < minCH:
             if course not in total_registration:
                 if course not in add_courses or course in config['Allowed_Duplicate_Courses']:
                     add_courses.append(course)
                     add_CH += get_course_CHs(course, Course_CHs)
 
-    # include co-requisites
-    add_co_requisites = []
-    total_registration += add_courses
-    for course in total_registration:
-        if course in CoRequisites.keys():
-            coreq = CoRequisites[course]
-            if not isinstance(coreq, str):
-                raise ValueError(f'Error - unidentified format for co-req: {course}:{coreq}')
-            if coreq not in total_registration and \
-                    coreq not in add_courses and \
-                    coreq not in taken:
-                add_courses.append(coreq)
-                add_co_requisites.append(coreq)
-                add_CH += get_course_CHs(coreq, Course_CHs)
+                    # include co-requisites
+                    if course in CoRequisites.keys():
+                        coreq = CoRequisites[course]
+                        if not isinstance(coreq, str):
+                            raise ValueError(f'Error - unidentified format for co-req: {course}:{coreq}')
+                        if coreq not in total_registration and coreq not in taken:
+                            if coreq in cat:
+                                add_courses.append(coreq)
+                                add_co_requisites.append(coreq)
+                                add_CH += get_course_CHs(coreq, Course_CHs)
 
     print_log(f'       add_courses: {", ".join(add_courses)}', verbose_to_screen = verbose)
-    # print_log(f'     added co-reqs: {", ".join(add_co_requisites)}', verbose_to_screen = verbose)
+    # print_log(f'     added co-reqs: {", ".join(add_co_requisites)}', verbose_to_screen = verbose)  # also included in add_courses
     print_log(f'            add_CH: {add_CH}', verbose_to_screen = verbose)
+
+    # Stochastic forecasting 
+    add_courses_extended = []
+    add_co_requisites_extended = []
+    add_CH_extended = 0
+    if config['Perform_Stochastic_forecasting']:
+        # find remaining additional courses in the original Must_take_Courses_extended + Projected_Courses_extended lists
+        for c in add_courses + config['Excluded_from_stochastic_forecasting']:
+            if c in Projected_Courses_extended:
+                Projected_Courses_extended.remove(c)
+            if c in Must_take_Courses_extended:
+                Must_take_Courses_extended.remove(c)
+
+        for course in Must_take_Courses_extended + Projected_Courses_extended:
+            tmp_course_ch = get_course_CHs(course, Course_CHs)
+            if add_CH_extended + tmp_course_ch <= add_CH:  # add as many courses as needed to reach the same CH as the deterministic forecast
+                if course not in total_registration:
+                    if course not in add_courses_extended or course in config['Allowed_Duplicate_Courses']:
+                        add_courses_extended.append(course)
+                        add_CH_extended += tmp_course_ch
+
+                        # include co-requisites
+                        if course in CoRequisites.keys():
+                            coreq = CoRequisites[course]
+                            tmp_course_ch = get_course_CHs(coreq, Course_CHs)
+                            if not isinstance(coreq, str):
+                                raise ValueError(f'Error - unidentified format for co-req: {course}:{coreq}')
+                            if coreq not in add_courses_extended and coreq not in taken:
+                                if coreq in cat:
+                                    add_courses_extended.append(coreq)
+                                    add_co_requisites_extended.append(coreq)
+                                    add_CH_extended += tmp_course_ch
+
+        print_log(f'~~~~~~~~~~~~~~~~~~', verbose_to_screen = verbose)
+        print_log(f'Identifying additional courses for stochastic forecasting', verbose_to_screen = verbose)
+        print_log(f'add_courses_extend: {", ".join(add_courses_extended)}', verbose_to_screen = verbose)
+        # print_log(f' added co-reqs_ext: {", ".join(add_co_requisites_extended)}', verbose_to_screen = verbose)  # also included in add_courses_extended
+        print_log(f'     add_CH_extend: {add_CH_extended}', verbose_to_screen = verbose)
 
     return {
         'taken': ', '.join(taken),
@@ -405,13 +448,17 @@ def audit_student_registration(record, catalog_year, concentration):
         'Courses_to_add_CH': str(add_CH),
         'CH_earned': str(CH_earned),
         'CH_registered': str(CH_registered),
-        'Applied_Rules': rules_msg}, \
-        add_courses
+        'Applied_Rules': rules_msg,
+        'Courses_to_add_extend': ', '.join(add_courses_extended),
+        'Courses_to_add_CH_extend': str(add_CH_extended),
+        }, \
+        add_courses, add_courses_extended
 
 if __name__ == "__main__":
     n = 0
     df = load_data(config['Input_File'])
-    df_forecast = pd.DataFrame({k: pd.Series(dtype=df[k].dtype) for k in Forecast_Columns})
+    df_forecast_d = pd.DataFrame({k: pd.Series(dtype=df[k].dtype) for k in Forecast_Columns})
+    df_forecast_s = pd.DataFrame({k: pd.Series(dtype=df[k].dtype) for k in Forecast_Columns})
 
     # get additional end_of_semester data for columns not in FAP: FailedCourses, Registered_Summer
     # if config['Registration_Data']:
@@ -429,13 +476,17 @@ if __name__ == "__main__":
                       'Audit_Projected_Courses', 'Audit_Must_take_Courses', 
                       'Audit_Courses_to_add', 'Courses_to_add_CH', 
                       'Audit_CH_earned', 'CH_registered',
-                      'Audit_Applied_Rules']
+                      'Audit_Applied_Rules',
+                      'Courses_to_add_extend', 'Courses_to_add_CH_extend']
     for c in output_columns:
         df[c] = ''
     warnings = []
 
-    course_list = set()
-    for index, row in df.iterrows():
+    print_log(f'Auditing students...', verbose_to_screen = True)
+    course_list = []
+    course_list_extend = []
+
+    for index, row in tqdm(df.iterrows(), total=len(df)):
         n += 1
         print_log(f'{"-"*80}\n*** Processing student ID: {row["ID"]}', verbose_to_screen = verbose)
 
@@ -460,28 +511,79 @@ if __name__ == "__main__":
             continue
 
         # Audit
-        R, add_courses = audit_student_registration(row, catalog_year, concentration)
+        R, add_courses, add_courses_extended = audit_student_registration(row, catalog_year, concentration)
         df.loc[index,output_columns] = R.values()
 
-        # Forecast
-        df_forecast.loc[index,Forecast_Columns] = df.loc[index,Forecast_Columns]
+        # Forecast: Deterministic
+        df_forecast_d.loc[index,Forecast_Columns] = df.loc[index,Forecast_Columns]
         for c in add_courses:
-            course_list.add(c)
-            df_forecast.loc[index,c] = 1
+            if c not in course_list:
+                course_list.append(c)
+                df_forecast_d.loc[index,c] = 1
+            elif pd.isnull(df_forecast_d.loc[index,c]):
+                df_forecast_d.loc[index,c] = 1
+            else:
+                df_forecast_d.loc[index,c] += 1
 
+        # Forecast: Stochastic
+        if config['Perform_Stochastic_forecasting']:
+            r1 = config['First_choice_ratio']
+            r2 = 1 - r1
+            n1 = len(add_courses)
+            n2 = len(add_courses_extended)
+            if n2 == 0:
+                r1 = 1
+                r2 = 0
+            else:
+                r2 *= n1 / n2  # prorate to ensure the number of student registrations remain the same
+            df_forecast_s.loc[index,Forecast_Columns] = df.loc[index,Forecast_Columns]
+            for c in add_courses:
+                if c not in course_list_extend:
+                    course_list_extend.append(c)
+                    df_forecast_s.loc[index,c] = 0.0
+                elif pd.isnull(df_forecast_s.loc[index,c]):
+                    df_forecast_s.loc[index,c] = 0.0
+                df_forecast_s.loc[index,c] += r1
+            for c in add_courses_extended:
+                if c not in course_list_extend:
+                    course_list_extend.append(c)
+                    df_forecast_s.loc[index,c] = 0.0
+                elif pd.isnull(df_forecast_s.loc[index,c]):
+                    df_forecast_s.loc[index,c] = 0.0
+                df_forecast_s.loc[index,c] += r2
+
+    # save auditing file
+    print_log(f'Saving audit file: {config['Audit_Output_File']}', verbose_to_screen = True)
     df.to_excel(config['Audit_Output_File'])
+
+    # save forecast files: Deterministic
     course_list = sorted(list(course_list))
-    grouped_forecast = df_forecast.groupby(by='Campus')[course_list].count().transpose()
-    grouped_forecast.to_excel(config['Forecast_Output_File_sum'])
-    df_forecast.to_excel(config['Forecast_Output_File_det'])
+    grouped_forecast_d = df_forecast_d.groupby(by='Campus')[course_list].sum().transpose()
+    print_log(f'Saving deterministic forecast files: {config['Forecast_d_Output_File_sum']} + {config['Forecast_d_Output_File_det']}', verbose_to_screen = True)
+    grouped_forecast_d.to_excel(config['Forecast_d_Output_File_sum'])
+    df_forecast_d.to_excel(config['Forecast_d_Output_File_det'])
+
+    # save forecast files: Stochastic
+    if config['Perform_Stochastic_forecasting']:
+        course_list_extend = sorted(list(course_list_extend))
+        grouped_forecast_s = df_forecast_s.groupby(by='Campus')[course_list_extend].sum().transpose().round(1)
+        print_log(f'Saving stochastic forecast files: {config['Forecast_s_Output_File_sum']} + {config['Forecast_s_Output_File_det']}', verbose_to_screen = True)
+        grouped_forecast_s.to_excel(config['Forecast_s_Output_File_sum'])
+        df_forecast_s.to_excel(config['Forecast_s_Output_File_det'])
+    
+    # show warnings
     warnings = Counter(warnings)
     if warnings:
         print_log(f'The following warnings were present:', verbose_to_screen = True)
         for w in warnings:
             print_log(f'\t{warnings[w]:4d} {w}', verbose_to_screen = True)
 
+    # calculate run time
     tok = time.time()
     print_log(f'\nProcessed {n} students in {round(tok-tik)} seconds\n', verbose_to_screen = True)
 
-    with open(config['Audit_Output_File'][0:-5]+'.txt','w') as log_file:
+    # save log file
+    log_file_name = config['Audit_Output_File'][0:-5]+'.txt'
+    print_log(f'Saving log file: {log_file_name}\n', verbose_to_screen = True)
+    with open(log_file_name,'w') as log_file:
         log_file.write(log_text)

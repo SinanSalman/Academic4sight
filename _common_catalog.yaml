@@ -1,4 +1,5 @@
-# ZU CTI Information Common to all Catalogs
+# ZU CTI Information Common to all Catalogs:
+#   all other catalogs will use this as a base and include it into its information
 
 # Format: 
 #   number_of_CH: [list_of_ courses]
@@ -82,14 +83,15 @@ PreRequisites: {
   FIN308: [MTH213, ACC202]
 }
 
-# Key/important courses; pre-requisite courses will be added automatically; order counts
+# Key/important courses; pre-requisite courses will be added automatically; order counts: first come, first used
 Key_Courses: [ CIT466 ]
 
 # Format: 
 #   Course_Group: [list_of_courses_which_can_satisfy_the_Group]
 #   Substituted_Course: [list_of_courses_which_can_substitute_the_course]
+# Note: order counts: first come first substituted
 Groups: { 
-  GroupA: [ ARC212, GEN150, ISL209, PSY212 ],
+  GroupA: [ HSS255, ISL135, ART220, GEN150, HSS101, ISL209, PHL201, PSY212 ],
   GroupD: [ ENV240, GEN195, PBH267, PHY201 ],
   GroupG: [ GEN185 ],
 
@@ -200,6 +202,7 @@ Groups: {
     ]
 }
 
+# order counts: first come, first executed
 Rules: {
   "CIT490 can only be one of the last two courses" : {
     ECHiP: [114,999],
@@ -251,25 +254,4 @@ Rules: {
     MatchAny: [ZU_Elective, P_Elective, HIS-251],
     Note : "Check if NotInPlan course(s) can be counted as elective or substitute a discontinued course."
   },
-  }
-#Added
-#[HSS255 <--> GEN255]
-#[ISL135 <--> GEN135]
-#[ MGT309 <--> MGT209]
-#[GEN110 <--> COL110]
-#[GEN120 <--> COL120]
-#[GEN130 <--> COL130]
-#[ARA130 <--> COL130, GEN130]
-#[GEN140 <--> COL140]
-#[GEN150 <--> COL150]
-#[GEN135 <--> COL135]
-#[EWS240 <--> ENG240]
-#[ GEN120 <-- ZU Elective] : included but not working ????
-#[ <-->]
-#HIS251, HIS204 counted as Zu- elective (catalog 2019 )
-#[ ZU Elective <-- HIS303] which catalog??
-#ARAbic for HT still same not replaced with Elective ??
-#Failed course and registered in it now ??
-#201918016	CIT490		GEN120	GEN120 Sub by INS311
-#ENG240 prereq
-#
+}

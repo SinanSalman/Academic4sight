@@ -2,15 +2,22 @@ Verbose:                    False
 catalog_filenames:          "_20??.yaml"
 catalog_defaults:           "_common_catalog.yaml"
 Input_File:                 "Student Records Information - Faculty Access Portal.xlsx"
-# Input_File:                 "CTI Students degree Audit.xlsx"
 Audit_Output_File:          "StudentsAudit.xlsx"
-Forecast_Output_File_sum:   "StudentsForecast_summary.xlsx"
-Forecast_Output_File_det:   "StudentsForecast_details.xlsx"
+Forecast_d_Output_File_sum: "StudentsForecast_d_summary.xlsx"  # summary of detailed forecast: Deterministic
+Forecast_d_Output_File_det: "StudentsForecast_d_details.xlsx"  # detailed forecast: Deterministic
+Forecast_s_Output_File_sum: "StudentsForecast_s_summary.xlsx"  # summary of detailed forecast: Stochastic
+Forecast_s_Output_File_det: "StudentsForecast_s_details.xlsx"  # detailed forecast: Stochastic
 # Registration_Data:          ""  # additional data for columns not in FAP: FailedCourses, Registered_Summer
+
 Number_Projection_Courses:  10
 Number_Key_Courses:         3
 
 Allowed_Duplicate_Courses: [ GroupA, GroupD, GroupG, P_Elective, ZU_Elective ]
+
+# Stochastic forecasting parameters
+Perform_Stochastic_forecasting:       False
+First_choice_ratio:                   0.75  # used in stochastic forecasting; the ratio of students who will register in their first choice courses (vs. second choice courses)
+Excluded_from_stochastic_forecasting: [ CIT490, CIT499 ]  # used in stochastic forecasting; courses that should not stick with deterministic forecasting
 
 Concentrations: { 
   "Security and Network Tech" : "SECNET",
