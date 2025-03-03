@@ -15,7 +15,7 @@ Number_Key_Courses:         3
 Allowed_Duplicate_Courses: [ GroupA, GroupD, GroupG, P_Elective, ZU_Elective ]
 
 # Stochastic forecasting parameters
-Perform_Stochastic_forecasting:       False
+Perform_Stochastic_forecasting:       True
 First_choice_ratio:                   0.75  # used in stochastic forecasting; the ratio of students who will register in their first choice courses (vs. second choice courses)
 Excluded_from_stochastic_forecasting: [ CIT490, CIT499 ]  # used in stochastic forecasting; courses that should not stick with deterministic forecasting
 
