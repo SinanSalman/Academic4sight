@@ -4,7 +4,8 @@
 License:    GPLv3
 
 Version History:
-03.02.2025  3.0     new feature; added stochastic forecasting
+05.03.2025  3.1     bug fix; add co-req if not taken with course when registered; check in student's catalog before adding a pre-req to key courses
+02.03.2025  3.0     new feature; added stochastic forecasting
 21.02.2025  2.12    fixed bug; add pre-req only if it is in the student catalog, if not, it is not required to be taken
 21.02.2025  2.11    improved logic; some courses (e.g., GroupA or Elective) can repeat, others not
 18.02.2025  2.1     bug fix; new students' MinCH=15; failed courses enrolled now should not appear in projection
@@ -240,21 +241,22 @@ def audit_student_registration(record, catalog_year, concentration):
 
     #  Collapse all Pre-Reqs into a flat list to add to Key_Courses
     Key_Courses = catalogs[catalog_year]['Key_Courses'].copy()
-    for PreReq in PreRequisites.values():
-        if isinstance(PreReq, str): # one course
-            if PreReq not in Key_Courses:
-                Key_Courses.append(PreReq)
-        elif isinstance(PreReq, dict): # any of the courses in a dict 
-            for c in PreReq.values():
-                if c not in Key_Courses:
-                    Key_Courses.append(c)
-        elif isinstance(PreReq, list): # all of the courses in a list
-            for c in PreReq:
-                if c not in Key_Courses:
-                    Key_Courses.append(c)
-        else:
-            print_log(f'Error: preReq "{PreReq}" is not recognized as valid format for PreRequisites', verbose_to_screen = True)
-            quit()
+    for course, PreReq in PreRequisites.items():
+        if course in cat: # only add pre-req if the course is in the student's catalog
+            if isinstance(PreReq, str): # one course
+                if PreReq not in Key_Courses:
+                    Key_Courses.append(PreReq)
+            elif isinstance(PreReq, dict): # any of the courses in a dict 
+                for c in PreReq.values():
+                    if c not in Key_Courses:
+                        Key_Courses.append(c)
+            elif isinstance(PreReq, list): # all of the courses in a list
+                for c in PreReq:
+                    if c not in Key_Courses:
+                        Key_Courses.append(c)
+            else:
+                print_log(f'Error: preReq "{PreReq}" is not recognized as valid format for PreRequisites', verbose_to_screen = True)
+                quit()
 
     # remove completed & currently taking courses from the catalog plan & check for group/elective courses
     taken = []
@@ -329,6 +331,13 @@ def audit_student_registration(record, catalog_year, concentration):
                 Projected_Courses.append(course)
             if course not in Must_take_Courses:
                 Must_take_Courses.append(course)
+    for course in total_registration:  # add not taken co-requisites of currently registered courses
+        if course in CoRequisites.keys():
+            coreq = CoRequisites[course]
+            if not isinstance(coreq, str):
+                raise ValueError(f'Error - unidentified format for co-req: {course}:{coreq}')
+            if coreq in cat and coreq not in Must_take_Courses:
+                Must_take_Courses.append(coreq)
     for course in cat:  # add remaining courses from plan
         if course not in Projected_Courses or course in config['Allowed_Duplicate_Courses']:
             Projected_Courses.append(course)
