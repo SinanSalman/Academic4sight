@@ -1,5 +1,5 @@
 # ZU CTI Catalog 2020
-#   this extends _comon_catalog.yaml
+#   this extends _common_catalog.yaml
 
 # Format: 
 #   number_of_CH: [list_of_ courses]
@@ -26,57 +26,57 @@ Key_Courses: [ ]
 SECNET:
   [ CIT210, ENG140, ARA130, GroupA, GroupD,              #  S1
     MTH215, SEC235, ENG145, ISL135, GroupA,              #  S2
-    SWE225, ENG240, NET256, NET257,  MTH281, GroupG,     #  S3
-    CIT365, CIT300, CIT315, SEC335, SEC336, SWE245,      #  S4
-    NET351, NET352,SWE320, SWE321, CIT305, ARA345,       #  S5
+    ENG240, SWE225, NET256, NET257, MTH281, GroupG,      #  S3
+    CIT365, CIT300, SEC335, SEC336, CIT315, SWE245,      #  S4
+    SWE320, SWE321, NET351, NET352, ARA345, CIT305,      #  S5
     CIT460, CIT461, SEC432, SEC433, INS377, ZU_Elective, #  S6
-    SEC435, CIT466, CIT480, HSS255, ZU_Elective,         #  S7
+    CIT466, SEC435, CIT480, FYE125, ZU_Elective,         #  S7
     NET455, SEC430, ZU_Elective,                         #  S8
     CIT499, CIT490 ]                                     #  S9
 
 WAM:
   [ CIT210, ENG140, ARA130, GroupA, GroupD,             #  S1
     MTH215, SEC235, ENG145, ISL135, GroupA,             #  S2
-    SWE225, ENG240, NET256, NET257, MTH281, GroupG,     #  S3
+    ENG240, SWE225, NET256, NET257, MTH281, GroupG,     #  S3
     CIT365, CIT300, SWE245, IMT375, CIT315,             #  S4
-    SWE320, SWE321, CIT305, IMT340, ARA345,             #  S5
-    SWE346, SWE371, INS377, CIT372, CIT460, CIT461,     #  S6
-    IMT376, CIT466, CIT480, HSS255, ZU_Elective,        #  S7
+    SWE320, SWE321, IMT340, ARA345, CIT305,             #  S5
+    CIT460, CIT461, SWE346, SWE371, CIT372, INS377,     #  S6
+    IMT376, CIT466, CIT480, FYE125, ZU_Elective,        #  S7
     CIT470, ZU_Elective, ZU_Elective,                   #  S8
     CIT499, CIT490 ]                                    #  S9
 
 BI:  
   [ MTH215, ENG140, ARA130, CIT210, GroupA,              #  S1
-    INS260, MTH213, ENG145, ISL135, GroupD,              #  S2
-    SWE225, ENG240, SEC235, ACC202, GroupA,              #  S3
+    INS260, ENG145, MTH213, ISL135, GroupD,              #  S2
+    ENG240, SEC235, SWE225, ACC202, GroupA,              #  S3
     CIT365, CIT285, MGT209, OPR300, GroupG,              #  S4
     SWE320, SWE321, MKT210, CIT470, HRM301, ARA345,      #  S5 
-    INS377, CIT466, CIT460, CIT461, FIN308, ZU_Elective, #  S6
-    INS476, INS477, MKT433, HSS255, CIT480, ZU_Elective, #  S7
+    CIT466, CIT460, CIT461, INS377, FIN308, ZU_Elective, #  S6
+    FYE125, INS476, INS477, MKT433, CIT480, ZU_Elective, #  S7
     INS467, ZU_Elective,                                 #  S8
     CIT499, CIT490 ]                                     #  S9
 
 MIS: 
   [ MTH215, ENG140, ARA130, CIT210, GroupA,             #  S1
-    INS260, MTH213, ENG145, ISL135, GroupD,             #  S2
+    INS260, ENG145, MTH213, ISL135, GroupD,             #  S2
     ENG240, SEC235, SWE225, ACC202, GroupA,             #  S3
     CIT365, CIT285, MGT209, OPR300, GroupG,             #  S4
-    INS361, CIT372, ARA345, HRM301, ZU_Elective,        #  S5
-    INS369, INS377, CIT460, CIT466, SEC430,             #  S6
-    CIT480, INS410, HSS255, FIN308, ZU_Elective,        #  S7
-    INS465, INS468, ZU_Elective,                        #  S8
+    INS361, CIT372, HRM301, ARA345, ZU_Elective,        #  S5
+    CIT460, CIT466, INS369, INS377, SEC430,             #  S6
+    FYE125, INS410, CIT480, FIN308, ZU_Elective,        #  S7
+    INS468, INS465, ZU_Elective,                        #  S8
     CIT499, CIT490 ]                                    #  S9
 
 ES:
   [ ENG140, MTH215, CIT210, ARA130, GroupA,             #  S1
     INS260, ENG145, MTH213, ISL135, GroupD,             #  S2
-    SWE225, ENG240, SEC235, ACC202,  GroupA,            #  S3
-    CIT365, CIT285, MGT209, OPR300, GroupG,             #  S4
+    ENG240, SEC235, SWE225, ACC202, GroupA,             #  S3
+    CIT365, MGT209, CIT285, OPR300, GroupG,             #  S4
     INS361, HRM301, IMT375, ARA345, ZU_Elective,        #  S5
-    CIT460, INS377,  CIT466, INS369, INS362,            #  S6
-    INS463, FIN308, CIT480, HSS255, ZU_Elective,        #  S7
+    CIT466, CIT460, INS369, INS377, INS362,             #  S6
+    FYE125, INS463, FIN308, CIT480, ZU_Elective,        #  S7
     INS468, INS492, ZU_Elective,                        #  S8
-    CIT499, CIT490 ]                                
+    CIT499, CIT490 ]                                    #  S9
 
 # Format: 
 #   Course_Group: [list_of_courses_which_can_satisfy_the_Group]

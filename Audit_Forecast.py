@@ -4,10 +4,11 @@
 License:    GPLv3
 
 Version History:
-05.03.2025  3.1     bug fix; add co-req if not taken with course when registered; check in student's catalog before adding a pre-req to key courses
+07.03.2025  3.02    improved logic; key courses are selected from projection, and not from remaining in catalog
+05.03.2025  3.01    bug fix; add co-req if not taken with course when registered in previous semesters; check in student's catalog before adding a pre-req to key courses
 02.03.2025  3.0     new feature; added stochastic forecasting
-21.02.2025  2.12    fixed bug; add pre-req only if it is in the student catalog, if not, it is not required to be taken
-21.02.2025  2.11    improved logic; some courses (e.g., GroupA or Elective) can repeat, others not
+21.02.2025  2.12    bug fix; add pre-req only if it is in the student catalog, if not, it is not required to be taken
+21.02.2025  2.11    improved logic; some courses (e.g., GroupA or Elective) can repeat, others cannot
 18.02.2025  2.1     bug fix; new students' MinCH=15; failed courses enrolled now should not appear in projection
 15.02.2025  2.0     new feature: forecasting using "add_courses"
 14.02.2025  1.61    bug fix; do not add a failed course to Projected_Courses & Must_take_Courses if it is already registered
@@ -63,6 +64,7 @@ tik = time.time()
 config_filename = '_config.yaml'
 config = read_yaml(config_filename)
 verbose = config['Verbose']
+
 # use catalog_defaults as a base and update with each catalog file
 catalog_defaults = read_yaml(config['catalog_defaults'])
 catalogs = {}
@@ -241,19 +243,20 @@ def audit_student_registration(record, catalog_year, concentration):
 
     #  Collapse all Pre-Reqs into a flat list to add to Key_Courses
     Key_Courses = catalogs[catalog_year]['Key_Courses'].copy()
+    Key_preReq = []
     for course, PreReq in PreRequisites.items():
         if course in cat: # only add pre-req if the course is in the student's catalog
             if isinstance(PreReq, str): # one course
-                if PreReq not in Key_Courses:
-                    Key_Courses.append(PreReq)
+                if PreReq not in Key_preReq:
+                    Key_preReq.append(PreReq)
             elif isinstance(PreReq, dict): # any of the courses in a dict 
                 for c in PreReq.values():
-                    if c not in Key_Courses:
-                        Key_Courses.append(c)
+                    if c not in Key_preReq:
+                        Key_preReq.append(c)
             elif isinstance(PreReq, list): # all of the courses in a list
                 for c in PreReq:
-                    if c not in Key_Courses:
-                        Key_Courses.append(c)
+                    if c not in Key_preReq:
+                        Key_preReq.append(c)
             else:
                 print_log(f'Error: preReq "{PreReq}" is not recognized as valid format for PreRequisites', verbose_to_screen = True)
                 quit()
@@ -316,7 +319,7 @@ def audit_student_registration(record, catalog_year, concentration):
         CH_earned += get_course_CHs(c, Course_CHs)
 
     print_log(f'          Current Courses: {", ".join(CurrentCourses)}', verbose_to_screen = verbose)
-    print_log(f'Registered Summer Courses: {", ".join(Registered_Summer)}', verbose_to_screen = verbose)
+    print_log(f'Summer Registered Courses: {", ".join(Registered_Summer)}', verbose_to_screen = verbose)
     print_log(f'       Registered Courses: {", ".join(Registered)}', verbose_to_screen = verbose)
     print_log(f'           Registered CHs: {CH_registered}', verbose_to_screen = verbose)
     print_log(f'               Earned CHs: {CH_earned}', verbose_to_screen = verbose)
@@ -324,6 +327,7 @@ def audit_student_registration(record, catalog_year, concentration):
     # prep Projected & Must_take_Courses
     Projected_Courses = []
     Must_take_Courses = []
+    Must_take_Courses_and_Why = []
     total_registration = no_duplicates_ordered_list(Registered + Registered_Summer + CurrentCourses)
     for course in FailedCourses:  # start w/ failed courses
         if course not in total_registration:  # if already registered for, skip
@@ -331,6 +335,7 @@ def audit_student_registration(record, catalog_year, concentration):
                 Projected_Courses.append(course)
             if course not in Must_take_Courses:
                 Must_take_Courses.append(course)
+                Must_take_Courses_and_Why.append(f'{course}(Failed)')
     for course in total_registration:  # add not taken co-requisites of currently registered courses
         if course in CoRequisites.keys():
             coreq = CoRequisites[course]
@@ -338,11 +343,16 @@ def audit_student_registration(record, catalog_year, concentration):
                 raise ValueError(f'Error - unidentified format for co-req: {course}:{coreq}')
             if coreq in cat and coreq not in Must_take_Courses:
                 Must_take_Courses.append(coreq)
+                Must_take_Courses_and_Why.append(f'{course}(Missed_CoReq)')
     for course in cat:  # add remaining courses from plan
         if course not in Projected_Courses or course in config['Allowed_Duplicate_Courses']:
             Projected_Courses.append(course)
         if course in Key_Courses and course not in Must_take_Courses:
             Must_take_Courses.append(course)
+            Must_take_Courses_and_Why.append(f'{course}(Key_Course)')
+        if course in Key_preReq and course not in Must_take_Courses:
+            Must_take_Courses.append(course)
+            Must_take_Courses_and_Why.append(f'{course}(Key_PreReq)')
 
     # remove co-requisites(lab) from projection when the co-requisites(course is not taken or in projection)
     for course, coreq in CoRequisites.items():
@@ -352,6 +362,19 @@ def audit_student_registration(record, catalog_year, concentration):
         if course not in taken and course not in Must_take_Courses:
             if coreq in Must_take_Courses:
                 Must_take_Courses.remove(coreq)
+                for c in Must_take_Courses_and_Why:
+                    if coreq in c:
+                        Must_take_Courses_and_Why.remove(c)
+                        break
+
+    # remove must-take courses if not in projection
+    for course in Must_take_Courses.copy():
+        if course not in Projected_Courses:
+            Must_take_Courses.remove(course)
+            for c in Must_take_Courses_and_Why:
+                if course in c:
+                    Must_take_Courses_and_Why.remove(c)
+                    break
 
     # apply rules
     rules_msg = apply_rule(catalogs[catalog_year]['Rules'], 
@@ -366,12 +389,13 @@ def audit_student_registration(record, catalog_year, concentration):
     Must_take_Courses_extended = Must_take_Courses.copy()
     Projected_Courses = list(Projected_Courses)[:config['Number_Projection_Courses']]
     Must_take_Courses = list(Must_take_Courses)[:config['Number_Key_Courses']]
+    Must_take_Courses_and_Why = list(Must_take_Courses_and_Why)[:config['Number_Key_Courses']]
 
     print_log(f'\nApplied rules:\n\t{rules_msg}\n', verbose_to_screen = verbose)
     print_log(f' Remaining in plan: {", ".join(cat+courses_w_unsatisfied_prereqs)}', verbose_to_screen = verbose)
     print_log(f'unsatisfied PreReq: {", ".join(courses_w_unsatisfied_prereqs_and_why)}\n', verbose_to_screen = verbose)
     print_log(f' Projected courses: {", ".join(Projected_Courses)}', verbose_to_screen = verbose)
-    print_log(f' Must take courses: {", ".join(Must_take_Courses)}', verbose_to_screen = verbose)
+    print_log(f' Must take courses: {", ".join(Must_take_Courses_and_Why)}', verbose_to_screen = verbose)
 
     # prep list of courses to add
     add_courses = []
@@ -385,14 +409,14 @@ def audit_student_registration(record, catalog_year, concentration):
         else:
             minCH = 11
 
-    for course in Must_take_Courses + Projected_Courses:
+    for course in no_duplicates_ordered_list(Must_take_Courses + Projected_Courses):
         if CH_registered + add_CH < minCH:
             if course not in total_registration:
                 if course not in add_courses or course in config['Allowed_Duplicate_Courses']:
                     add_courses.append(course)
                     add_CH += get_course_CHs(course, Course_CHs)
 
-                    # include co-requisites
+                    # check if co-requisites is needed
                     if course in CoRequisites.keys():
                         coreq = CoRequisites[course]
                         if not isinstance(coreq, str):
@@ -413,13 +437,13 @@ def audit_student_registration(record, catalog_year, concentration):
     add_CH_extended = 0
     if config['Perform_Stochastic_forecasting']:
         # find remaining additional courses in the original Must_take_Courses_extended + Projected_Courses_extended lists
-        for c in add_courses + config['Excluded_from_stochastic_forecasting']:
+        for c in no_duplicates_ordered_list(add_courses + config['Excluded_from_stochastic_forecasting']):
             if c in Projected_Courses_extended:
                 Projected_Courses_extended.remove(c)
             if c in Must_take_Courses_extended:
                 Must_take_Courses_extended.remove(c)
 
-        for course in Must_take_Courses_extended + Projected_Courses_extended:
+        for course in no_duplicates_ordered_list(Must_take_Courses_extended + Projected_Courses_extended):
             tmp_course_ch = get_course_CHs(course, Course_CHs)
             if add_CH_extended + tmp_course_ch <= add_CH:  # add as many courses as needed to reach the same CH as the deterministic forecast
                 if course not in total_registration:
@@ -452,7 +476,7 @@ def audit_student_registration(record, catalog_year, concentration):
         'Remaining_in_plan': ', '.join(cat+courses_w_unsatisfied_prereqs),
         'unsatisfied_PreReq': ', '.join(courses_w_unsatisfied_prereqs_and_why),
         'Projected_Courses': ', '.join(Projected_Courses),
-        'Must_take_Courses': ', '.join(Must_take_Courses),
+        'Must_take_Courses': ', '.join(Must_take_Courses_and_Why),
         'Courses_to_add': ', '.join(add_courses),
         'Courses_to_add_CH': str(add_CH),
         'CH_earned': str(CH_earned),
@@ -590,9 +614,11 @@ if __name__ == "__main__":
     # calculate run time
     tok = time.time()
     print_log(f'\nProcessed {n} students in {round(tok-tik)} seconds\n', verbose_to_screen = True)
-
+    
     # save log file
     log_file_name = config['Audit_Output_File'][0:-5]+'.txt'
     print_log(f'Saving log file: {log_file_name}\n', verbose_to_screen = True)
     with open(log_file_name,'w') as log_file:
         log_file.write(log_text)
+    
+    print(f'Run Complete.\n')

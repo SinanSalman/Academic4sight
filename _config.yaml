@@ -2,6 +2,7 @@ Verbose:                    False
 catalog_filenames:          "_20??.yaml"
 catalog_defaults:           "_common_catalog.yaml"
 Input_File:                 "Student Records Information - Faculty Access Portal.xlsx"
+# Input_File:                 "Student Records Information - Faculty Access Portal_Fatna.xlsx"
 Audit_Output_File:          "StudentsAudit.xlsx"
 Forecast_d_Output_File_sum: "StudentsForecast_d_summary.xlsx"  # summary of detailed forecast: Deterministic
 Forecast_d_Output_File_det: "StudentsForecast_d_details.xlsx"  # detailed forecast: Deterministic
@@ -43,6 +44,15 @@ Equal_Catalog_Years: {
 }
 
 File_Format: {
+  "Student Records Information - Faculty Access Portal_Fatna.xlsx": {
+    skiprows: 2,
+    columns: {
+      "Student ID" : "ID",
+      "Admitted Term (Major)" : "Catalog",
+      "NextCourses" : "Registered",
+      "CGPA" : "cGPA"
+    }
+  },
   "Student Records Information - Faculty Access Portal.xlsx": {
     skiprows: 2,
     columns: {
@@ -51,5 +61,5 @@ File_Format: {
       "NextCourses" : "Registered",
       "CGPA" : "cGPA"
     }
-  }
+  },
 }

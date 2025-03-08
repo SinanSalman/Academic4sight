@@ -1,6 +1,7 @@
 # sensitive data (input/output files)
 *.txt
 *.xlsx
+*.xlsm
 
 .DS_Store
 launch.json

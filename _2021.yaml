@@ -28,53 +28,53 @@ SECNET:
     MTH215, SEC235, ENG145, ISL135, GroupA,              #  S2
     ENG240, SWE225, NET256, NET257, MTH281, GroupG,      #  S3
     CIT365, CIT285, SEC335, SEC336, CIT315, SWE245,      #  S4
-    SWE320, SWE321, NET351, NET352, CIT305, ARA345,      #  S5
+    SWE320, SWE321, NET351, NET352, ARA345, CIT305,      #  S5
     CIT460, CIT461, SEC432, SEC433, INS377, ZU_Elective, #  S6
-    SEC435, CIT466, HSS255, CIT480, ZU_Elective,         #  S7
-    SEC430, NET455, ZU_Elective,                         #  S8
+    CIT466, SEC435, FYE125, CIT480, ZU_Elective,         #  S7
+    NET455, SEC430, ZU_Elective,                         #  S8
     CIT499, CIT490 ]                                     #  S9
 
 WAM:
   [ CIT210, ENG140, ARA130, GroupA, GroupD,             #  S1
-    MTH215, ENG145, ISL135, SEC235, GroupA,             #  S2
-    SWE225, ENG240, NET256, NET257, MTH281, GroupG,     #  S3
+    MTH215, SEC235, ENG145, ISL135, GroupA,             #  S2
+    ENG240, SWE225, NET256, NET257, MTH281, GroupG,     #  S3
     CIT365, CIT285, SWE245, IMT375, CIT315,             #  S4
-    SWE320, SWE321, CIT305, IMT340, ARA345,             #  S5
-    SWE346, SWE371, CIT372, INS377, CIT460, CIT461,     #  S6
-    IMT376, CIT466, CIT480, HSS255, ZU_Elective,        #  S7
+    SWE320, SWE321, IMT340, ARA345, CIT305,             #  S5
+    CIT460, CIT461, SWE346, SWE371, CIT372, INS377,     #  S6
+    IMT376, CIT466, CIT480, FYE125, ZU_Elective,        #  S7
     CIT470, ZU_Elective, ZU_Elective,                   #  S8
     CIT499, CIT490 ]                                    #  S9
 
 BI:  
   [ MTH215, ENG140, ARA130, GroupA, GroupD,             #  S1
-    INS260, MTH213, ISL135, ENG145, SEC235,             #  S2
-    ENG240, SWE225, ACC202, INS211, INS311, GroupA,     #  S3
+    INS260, SEC235, ENG145, MTH213, ISL135,             #  S2
+    ENG240, SWE225, ACC202, INS311, INS211, GroupA,     #  S3
     CIT365, MGT209, CIT285, OPR300, GroupG,             #  S4
-    SWE320, SWE321, MKT210, CIT470, ARA345, P_Elective, #  S5 
-    INS377, CIT466, INS467, INS469, CIT460, CIT461,     #  S6
-    INS476, INS477, HRM301, CIT480, HSS255,             #  S7
+    MKT210, CIT470, SWE320, SWE321, ARA345, P_Elective, #  S5 
+    CIT466, CIT460, CIT461, INS467, INS469, INS377,     #  S6
+    FYE125, INS476, INS477, HRM301, CIT480,             #  S7
     MKT433, INS474, INS475, P_Elective,                 #  S8
     CIT499, CIT490 ]                                    #  S9
 
 MIS: 
   [ MTH215, ENG140, ARA130, GroupA, GroupD,             #  S1
-    INS260, MTH213, SEC235, ISL135, ENG145,             #  S2
-    ENG240, SWE225, ACC202, INS211, INS311, GroupA,     #  S3
+    INS260, SEC235, ENG145, MTH213, ISL135,             #  S2
+    ENG240, SWE225, ACC202, INS311, INS211, GroupA,     #  S3
     CIT365, MGT209, CIT285, OPR300, GroupG,             #  S4
     INS361, INS363, SWE320, SWE321, ARA345, P_Elective, #  S5
-    INS369, INS368, INS377, CIT460, CIT461, CIT466,     #  S6
-    INS425, INS426, INS410, HSS255, HRM301, CIT480,     #  S7
+    CIT466, CIT460, CIT461, INS369, INS368, INS377,     #  S6
+    FYE125, INS425, INS426, INS410, HRM301, CIT480,     #  S7
     INS468, INS465, P_Elective,                         #  S8
     CIT499, CIT490 ]                                    #  S9
 
 ES:
   [ ARA130, ENG140, MTH215, GroupA, GroupD,             #  S1
-    ISL135, ENG145, SEC235, INS260, MTH213,             #  S2
-    ENG240, ACC202, SWE225, GroupA, INS211, INS311,     #  S3
+    ISL135, ENG145, INS260, SEC235, MTH213,             #  S2
+    ENG240, SWE225, ACC202, GroupA, INS311, INS211,     #  S3
     CIT365, MGT209, CIT285, OPR300, GroupG,             #  S4
-    INS361, INS363, ARA345, SWE320, SWE321, P_Elective, #  S5
-    INS377, CIT460, CIT461, INS369, INS368, CIT466,     #  S6
-    INS362, INS463, INS464, CIT480, HSS255, HRM301,     #  S7
+    INS361, INS363, SWE320, SWE321, ARA345, P_Elective, #  S5
+    CIT466, CIT460, CIT461, INS369, INS368, INS377,     #  S6
+    FYE125, INS362, INS463, INS464, HRM301, CIT480,     #  S7
     INS468, INS492, P_Elective,                         #  S8
     CIT499, CIT490 ]                                    #  S9
 
@@ -83,6 +83,7 @@ ES:
 #   Substituted_Course: [list_of_courses_which_can_substitute_the_course]
 # Note: order matters: first come first substituted
 Groups: { 
+   GroupA: [ FYE125, ISL135, ART220, GEN150, HSS101, ISL209, PHL201, PSY212 ],
 }
 
 # order counts: first come, first executed

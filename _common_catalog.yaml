@@ -38,7 +38,7 @@ CoRequisites: {
 #   course-1  or course-2 are pre-requisite:  {a: course-1, b: Course-2}
 PreRequisites: {
   ENG145: ENG140,
-  ENG240: ENG145,
+  ENG240: {a: ENG145, b: FYE140},
   CIT285: ENG240,
   CIT305: CIT285,
   HRM301: {a: CIT285, b: MGT209},
@@ -92,7 +92,7 @@ Key_Courses: [ CIT466 ]
 #   Substituted_Course: [list_of_courses_which_can_substitute_the_course]
 # Note: order counts: first come first substituted
 Groups: { 
-  GroupA: [ HSS255, ISL135, ART220, GEN150, HSS101, ISL209, PHL201, PSY212 ],
+  GroupA: [ ARC212, GEN150, ISL209, PSY212 ],
   GroupD: [ ENV240, GEN195, PBH267, PHY201 ],
   GroupG: [ GEN185 ],
 
@@ -100,6 +100,7 @@ Groups: {
   MTH213: [ MTH281, ICS214 ],  # substitutions
   MTH281: [ MTH213, ICS214 ],  # substitutions
   HSS255: [ FYE125, GEN255 ],  # substitutions
+  FYE125: [ HSS255 ],  # substitutions
   GEN110: [ FYE110, COL110 ],  # substitutions
   GEN220: [ FYE150  ],  # substitutions
   ISL135: [ FYE120, GEN135, COL135 ],  # substitutions
@@ -108,7 +109,7 @@ Groups: {
   GEN175: [ FYE195 ],  # substitutions
   GEN120: [ ZU_Elective, COL120 ],  # GEN120 is discontinued. Students should take a ZU Elective to substitute it. Needs memo -- to double check ??
   GEN140: [ ENG140, COL140 ],
-  GEN145: [ ENG145 ],
+  GEN145: [ ENG145, COL145 ],
   ENG140: [ GEN140 ],
   ENG145: [ GEN145 ],
   ARA320: [ ARA345 ],
@@ -199,7 +200,9 @@ Groups: {
     HIS201,   #It is added in Banner because it was in a previous catalogue, but it is not showing in 2024 catalog
     TCC375,    #It is added in Banner because it was in a previous catalogue, but it is not showing in 2024 catalog
     HIS251, HIS204, #counted as Zu- elective in catalog 2019 
-    HIS303 #???
+    HIS303, #???
+    FYE150, 
+    CHL100, CHL200, CHL300, CHL400, EDC324 #2024
     ]
 }
 
@@ -222,14 +225,14 @@ Rules: {
     ProjectionCount: [1,4],
     If_Not_Drop : [CIT499]
   },
-  "Once a year, not offered course (AUH-Female)" : {
-    Campus: ["AUH - Women's Campus"],
-    Drop : [IMT345, INS465, INS492]
-  },
-  "Once a year, not offered course (AUH-Male)" : {
-    Campus: ["AUH - Men's Campus"],
-    Drop : [IMT345, IMT375]
-  },
+  # "Once a year, not offered course (AUH-Female)" : {
+  #   Campus: ["AUH - Women's Campus"],
+  #   #Drop : [IMT345, INS465, INS492]
+  # },
+  # "Once a year, not offered course (AUH-Male)" : {
+  #   Campus: ["AUH - Men's Campus"],
+  #   Drop : [IMT345, IMT375]
+  # },
   "Only one MATH course-A" : {
     MatchAll: [MTH213, MTH215],
     Drop : [MTH213]
