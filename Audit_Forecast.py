@@ -4,6 +4,8 @@
 License:    GPLv3
 
 Version History:
+10.03.2025  3.04    improved logic; conditional substitution rule for uncounted courses
+09.03.2025  3.03    improved logic; replaced fixed minCH with a parameterized CH_ranges logic and MinimalEnrolmentMode (in config.yaml)
 07.03.2025  3.02    improved logic; key courses are selected from projection, and not from remaining in catalog
 05.03.2025  3.01    bug fix; add co-req if not taken with course when registered in previous semesters; check in student's catalog before adding a pre-req to key courses
 02.03.2025  3.0     new feature; added stochastic forecasting
@@ -133,7 +135,7 @@ def get_course_CHs(course, Course_CHs):
     return getattr(Course_CHs, 'default', 3)
 
 
-def apply_rule(rules, rec,  CH_earned,  Projected_Courses,  Must_take_Courses, not_in_plan):
+def apply_rule(rules, rec,  cat, CH_earned, Course_CHs,  taken, Projected_Courses,  Must_take_Courses, not_in_plan):
     applied_rules = []
     for label, rule in rules.items():
         applicable = True
@@ -185,17 +187,31 @@ def apply_rule(rules, rec,  CH_earned,  Projected_Courses,  Must_take_Courses, n
                     applicable &= True
                 else:
                     applicable &= False
+            if k == 'Substitute_Uncounted':
+                if len(v.keys()) > 1:
+                    raise ValueError(f'Error - Substitute_Uncounted rule can only have one course to substitute with')
+                (ks, vs), = v.items()
+                substitution = {}
+                for x in vs:
+                    if x in not_in_plan:  # find first course match
+                        substitution = {ks:x}
+                        break
+                if substitution:
+                    applicable &= True
+                else:
+                    applicable &= False
             if k == 'NotInPlanCount':
                 if v[0] <= len(not_in_plan) <= v[1]:
                     applicable &= True
                 else:
                     applicable &= False
+
         Dropped_Courses = set()
         v = []
         if ('Drop' in rule.keys() and applicable):
             v = rule['Drop']
         if ('If_Not_Drop' in rule.keys() and not applicable):
-            v = rule['If_Not_Drop']            
+            v = rule['If_Not_Drop']
         for course in v:
             if course in Projected_Courses:
                 Projected_Courses.remove(course)
@@ -205,9 +221,23 @@ def apply_rule(rules, rec,  CH_earned,  Projected_Courses,  Must_take_Courses, n
                 Dropped_Courses.add(course)
         if Dropped_Courses:
             applied_rules.append(f'{label}(drop:{"+".join(Dropped_Courses)})')
+
         if ('Note' in rule.keys() and applicable):
             applied_rules.append(f'Note: {rule["Note"]}')
-    return '\n\t'.join(applied_rules)
+
+        if ('Substitute_Uncounted' in rule.keys() and applicable):
+            (k,v), = substitution.items()
+            if not drop_course(k, cat):
+                raise ValueError(f'could not drop course:{k} from plan: {cat}')
+            # not_in_plan.remove(v)
+            # taken.append(v)
+            CH_earned += get_course_CHs(v, Course_CHs)
+            if k in Projected_Courses:
+                Projected_Courses.remove(k)
+            if k in Must_take_Courses:
+                Must_take_Courses.remove(k)
+            applied_rules.append(f'{label}(substitute:{k}->{v})')
+    return '\n\t'.join(applied_rules), CH_earned
 
 
 def audit_student_registration(record, catalog_year, concentration):
@@ -280,14 +310,6 @@ def audit_student_registration(record, catalog_year, concentration):
             if not course_found_in_groups:
                 not_in_plan.append(course)
 
-    print_log(f'                  Catalog: {catalog_year}', verbose_to_screen = verbose)
-    print_log(f'                     cGPA: {rec['cGPA']}', verbose_to_screen = verbose)
-    print_log(f'            Concentration: {concentration}', verbose_to_screen = verbose)
-    print_log(f'            Taken courses: {", ".join(taken)}', verbose_to_screen = verbose)
-    print_log(f'         Satisfied groups: {", ".join(satisfy_groups)}', verbose_to_screen = verbose)
-    print_log(f'           Failed courses: {", ".join(FailedCourses)}', verbose_to_screen = verbose)
-    print_log(f'    Uncounted (NotInPlan): {", ".join(not_in_plan)}', verbose_to_screen = verbose)
-
     # remove courses from plan when they have unsatisfied pre-requisites
     courses_w_unsatisfied_prereqs = []
     courses_w_unsatisfied_prereqs_and_why = []
@@ -317,12 +339,6 @@ def audit_student_registration(record, catalog_year, concentration):
         CH_registered += get_course_CHs(c, Course_CHs)
     for c in taken:
         CH_earned += get_course_CHs(c, Course_CHs)
-
-    print_log(f'          Current Courses: {", ".join(CurrentCourses)}', verbose_to_screen = verbose)
-    print_log(f'Summer Registered Courses: {", ".join(Registered_Summer)}', verbose_to_screen = verbose)
-    print_log(f'       Registered Courses: {", ".join(Registered)}', verbose_to_screen = verbose)
-    print_log(f'           Registered CHs: {CH_registered}', verbose_to_screen = verbose)
-    print_log(f'               Earned CHs: {CH_earned}', verbose_to_screen = verbose)
 
     # prep Projected & Must_take_Courses
     Projected_Courses = []
@@ -377,9 +393,12 @@ def audit_student_registration(record, catalog_year, concentration):
                     break
 
     # apply rules
-    rules_msg = apply_rule(catalogs[catalog_year]['Rules'], 
-                           rec, 
-                           CH_earned, 
+    rules_msg, CH_earned = apply_rule(catalogs[catalog_year]['Rules'], 
+                           rec,
+                           cat, 
+                           CH_earned,
+                           Course_CHs, 
+                           taken,
                            Projected_Courses, 
                            Must_take_Courses,
                            not_in_plan)
@@ -391,42 +410,62 @@ def audit_student_registration(record, catalog_year, concentration):
     Must_take_Courses = list(Must_take_Courses)[:config['Number_Key_Courses']]
     Must_take_Courses_and_Why = list(Must_take_Courses_and_Why)[:config['Number_Key_Courses']]
 
+    # prep list of courses to add
+    add_courses = []
+    add_co_requisites = []
+    add_CH = 0
+    CH_ranges = config['CH_ranges']
+    MinimalEnrollmentMode = config['MinimalEnrollmentMode']
+    if rec['cGPA'] == 0 and rec['Earned Hours'] == 0 and len(FailedCourses) == 0:
+        minCH = CH_ranges[-1]['minCH']
+        maxCH = CH_ranges[-1]['maxCH']
+    else:
+        for range in CH_ranges:
+            if range['gpa'][0] <= rec['cGPA'] <= range['gpa'][1]:
+                minCH = range['minCH']
+                maxCH = range['maxCH']
+
+    for course in no_duplicates_ordered_list(Must_take_Courses + Projected_Courses):
+        if MinimalEnrollmentMode and minCH <= (CH_registered + add_CH) <= maxCH:
+            break
+        if course not in total_registration and not (minCH <= (CH_registered + add_CH) <= maxCH):
+            if course not in add_courses or course in config['Allowed_Duplicate_Courses']:
+                tmp_course_ch = get_course_CHs(course, Course_CHs)
+                tmp_coreq_ch = 0
+                coreq = None
+                if course in CoRequisites.keys():  # check if co-requisites is needed
+                    coreq = CoRequisites[course]
+                    if not isinstance(coreq, str):
+                        raise ValueError(f'Error - unidentified format for co-req: {course}:{coreq}')
+                    if coreq not in total_registration and coreq not in taken and coreq in cat:
+                        tmp_coreq_ch = get_course_CHs(coreq, Course_CHs)
+                    else:
+                        coreq = None
+
+                if (CH_registered + add_CH + tmp_course_ch + tmp_coreq_ch) <= maxCH:
+                    add_courses.append(course)
+                    if coreq:
+                        add_courses.append(coreq)
+                        add_co_requisites.append(coreq)
+                    add_CH += tmp_course_ch + tmp_coreq_ch
+
+    print_log(f'                  Catalog: {catalog_year}', verbose_to_screen = verbose)
+    print_log(f'                     cGPA: {rec['cGPA']}', verbose_to_screen = verbose)
+    print_log(f'            Concentration: {concentration}', verbose_to_screen = verbose)
+    print_log(f'            Taken courses: {", ".join(taken)}', verbose_to_screen = verbose)
+    print_log(f'         Satisfied groups: {", ".join(satisfy_groups)}', verbose_to_screen = verbose)
+    print_log(f'           Failed courses: {", ".join(FailedCourses)}', verbose_to_screen = verbose)
+    print_log(f'    Uncounted (NotInPlan): {", ".join(not_in_plan)}', verbose_to_screen = verbose)
+    print_log(f'          Current Courses: {", ".join(CurrentCourses)}', verbose_to_screen = verbose)
+    print_log(f'Summer Registered Courses: {", ".join(Registered_Summer)}', verbose_to_screen = verbose)
+    print_log(f'       Registered Courses: {", ".join(Registered)}', verbose_to_screen = verbose)
+    print_log(f'           Registered CHs: {CH_registered}', verbose_to_screen = verbose)
+    print_log(f'               Earned CHs: {CH_earned}', verbose_to_screen = verbose)
     print_log(f'\nApplied rules:\n\t{rules_msg}\n', verbose_to_screen = verbose)
     print_log(f' Remaining in plan: {", ".join(cat+courses_w_unsatisfied_prereqs)}', verbose_to_screen = verbose)
     print_log(f'unsatisfied PreReq: {", ".join(courses_w_unsatisfied_prereqs_and_why)}\n', verbose_to_screen = verbose)
     print_log(f' Projected courses: {", ".join(Projected_Courses)}', verbose_to_screen = verbose)
     print_log(f' Must take courses: {", ".join(Must_take_Courses_and_Why)}', verbose_to_screen = verbose)
-
-    # prep list of courses to add
-    add_courses = []
-    add_co_requisites = []
-    add_CH = 0
-    if rec['cGPA'] > 2:  # need to make this and the minCH parametrized
-        minCH = 14
-    else:
-        if rec['cGPA'] == 0 and rec['Earned Hours'] == 0 and len(FailedCourses) == 0:
-            minCH = 14
-        else:
-            minCH = 11
-
-    for course in no_duplicates_ordered_list(Must_take_Courses + Projected_Courses):
-        if CH_registered + add_CH < minCH:
-            if course not in total_registration:
-                if course not in add_courses or course in config['Allowed_Duplicate_Courses']:
-                    add_courses.append(course)
-                    add_CH += get_course_CHs(course, Course_CHs)
-
-                    # check if co-requisites is needed
-                    if course in CoRequisites.keys():
-                        coreq = CoRequisites[course]
-                        if not isinstance(coreq, str):
-                            raise ValueError(f'Error - unidentified format for co-req: {course}:{coreq}')
-                        if coreq not in total_registration and coreq not in taken:
-                            if coreq in cat:
-                                add_courses.append(coreq)
-                                add_co_requisites.append(coreq)
-                                add_CH += get_course_CHs(coreq, Course_CHs)
-
     print_log(f'       add_courses: {", ".join(add_courses)}', verbose_to_screen = verbose)
     # print_log(f'     added co-reqs: {", ".join(add_co_requisites)}', verbose_to_screen = verbose)  # also included in add_courses
     print_log(f'            add_CH: {add_CH}', verbose_to_screen = verbose)
@@ -490,6 +529,7 @@ def audit_student_registration(record, catalog_year, concentration):
 if __name__ == "__main__":
     n = 0
     df = load_data(config['Input_File'])
+    print_log(f'loading input file: {config['Input_File']}', verbose_to_screen = True)
     df_forecast_d = pd.DataFrame({k: pd.Series(dtype=df[k].dtype) for k in Forecast_Columns})
     df_forecast_s = pd.DataFrame({k: pd.Series(dtype=df[k].dtype) for k in Forecast_Columns})
 

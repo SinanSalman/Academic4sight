@@ -208,7 +208,18 @@ Groups: {
 
 # order counts: first come, first executed
 Rules: {
-  "CIT490 can only be one of the last two courses" : {
+  "Substitute ARA345 for heritage students with an uncounted elective" : {
+    Skill: [ HT ],
+    Substitute_Uncounted: { 'ARA345': [     ANT261, ANT302, ANT362, ANT385, ARA211, ARA222, ARA235, ARA335, 
+    ARA380, ARM375, ARM395, ART201, ART205, ART220, ART221, ART251, CIT210, CIT480, COM200, COM230, COM240, 
+    EDC207, EDP202, EDP307, ENG240, ENG322, ENG331, ENG360, ENG363, ENG364, ENG365, ENG367, ENG368, ENV240, 
+    ENV241, FLS361, GEN110, GEN150, GEN175, GEN185, GEN195, GEN220, HIS321, HIS381, HSS101, HSS353, IMT375, 
+    INS260, ISC383, ISL209, ISL210, LAW200, LAW225, MGT209, MKT210, MTH103, MTH121, MTH213, MTH214, MTH215, 
+    MTH281, NET255, NUT205, PBH267, PHL201, PHY100, PHY210, POL227, POL335, PSY212, PSY363, SEC235, SOC326, 
+    SOC341, SOC374, EDC324, TCC371, GEN175, MTH212, HIS201, TCC375, HIS251, HIS204, HIS303, FYE150, CHL100, 
+    CHL200, CHL300, CHL400, EDC324 ]},
+  },
+    "CIT490 can only be one of the last two courses" : {
     ECHiP: [114,999],
     If_Not_Drop : [CIT490]
   },
@@ -256,6 +267,6 @@ Rules: {
   "NotInPlan courses may be counted as elective or substitute discontinued course" : {
     NotInPlanCount: [1,999],
     MatchAny: [ZU_Elective, P_Elective, HIS-251],
-    Note : "Check if NotInPlan course(s) can be counted as elective or substitute a discontinued course."
+    Note : "Check if NotInPlan course(s) can be counted as elective or substitute a discontinued course"
   },
 }

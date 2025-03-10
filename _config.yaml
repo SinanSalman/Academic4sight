@@ -1,8 +1,8 @@
 Verbose:                    False
 catalog_filenames:          "_20??.yaml"
 catalog_defaults:           "_common_catalog.yaml"
-Input_File:                 "Student Records Information - Faculty Access Portal.xlsx"
-# Input_File:                 "Student Records Information - Faculty Access Portal_Fatna.xlsx"
+# Input_File:                 "Student Records Information - Faculty Access Portal.xlsx"
+Input_File:                 "Student Records Information - Faculty Access Portal_Fatna.xlsx"
 Audit_Output_File:          "StudentsAudit.xlsx"
 Forecast_d_Output_File_sum: "StudentsForecast_d_summary.xlsx"  # summary of detailed forecast: Deterministic
 Forecast_d_Output_File_det: "StudentsForecast_d_details.xlsx"  # detailed forecast: Deterministic
@@ -12,6 +12,9 @@ Forecast_s_Output_File_det: "StudentsForecast_s_details.xlsx"  # detailed foreca
 
 Number_Projection_Courses:  10
 Number_Key_Courses:         3
+MinimalEnrollmentMode:      True
+CH_ranges:                [ { gpa: [0.0, 1.9999], minCH: 11, maxCH: 13 },     # { gpa: [ minGPA, maxGPA ], minCH: CH maxCH: CH } for each group
+                            { gpa: [2.0, 4.0000], minCH: 14, maxCH: 17 } ]    # use last entry as default when cGPA=0, EarnedHours=0, and FailedCourses=0
 
 Allowed_Duplicate_Courses: [ GroupA, GroupD, GroupG, P_Elective, ZU_Elective ]
 
@@ -40,7 +43,8 @@ Equal_Catalog_Years: {
   "2017": "2019",
   "2018": "2019",
   "2022": "2021",
-  "2023": "2021"
+  "2023": "2021",
+  "2025": "2024"
 }
 
 File_Format: {
