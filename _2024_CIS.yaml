@@ -1,0 +1,92 @@
+# ZU CTI Catalog 2024
+#   this extends _comon_catalog.yaml
+
+# Format: 
+#   number_of_CH: [list_of_ courses]
+#   default: Default_number_of_CH
+Course_CHs: {
+}
+
+# Format: 
+#   course: co-requisite
+CoRequisites: {
+}
+
+# Format: 
+#   course: pre-requisite
+#   course-1 and course-2 are pre-requisite:  [course-1, Course-2]
+#   course-1  or course-2 are pre-requisite:  {a: course-1, b: Course-2}
+PreRequisites: {
+}
+
+# Key/important courses; pre-requisite courses will be added automatically; order counts: first come, first used
+Key_Courses: [  FYE100, FYE140, FYE110, FYE150, FYE120, 
+                FYE105, FYE155, FYE195, FYE145, FYE125 ]
+
+# Concentrations' Catalog entries; Order determines priority
+SECNET:
+  [ FYE100, FYE110, FYE120, FYE140, FYE150,             #  S1
+    FYE105, FYE125, FYE155, FYE195, FYE145,             #  S2
+    CIT210, MTH215, ENG240, SEC235, ZU_Elective,        #  S3
+    SWE225, NET256, NET257, CIT365, CIT285, MTH281,     #  S4
+    SEC335, SEC336, CIT315, SWE320, SWE321, SWE245,     #  S5
+    NET351, NET352, ARA345, CIT305, CIT460, CIT461,     #  S6
+    CIT466, SEC432, SEC433, INS377, SEC435, CIT480,     #  S7
+    NET455, SEC430, ZU_Elective,                        #  S8
+    CIT499, CIT490 ]                                    #  S9
+
+WAM:
+  [ FYE100, FYE110, FYE120, FYE140, FYE150,             #  S1
+    FYE105, FYE125, FYE155, FYE195, FYE145,             #  S2
+    CIT210, MTH215, ENG240, SEC235, ZU_Elective,        #  S3
+    SWE225, CIT365, NET256, NET257, CIT285, MTH281,     #  S4
+    SWE320, SWE321, SWE245, IMT375, IMT340, CIT315,     #  S5
+    ARA345, CIT305, CIT460, CIT461, SWE346, SWE371,     #  S6
+    CIT372, IMT376, INS377, CIT466, CIT480,             #  S7
+    CIT470, ZU_Elective,                                #  S8
+    CIT499, CIT490 ]                                    #  S9
+
+BI:  
+  [ FYE100, FYE110, FYE120, FYE140, FYE150,             #  S1
+    FYE105, FYE125, FYE155, FYE195, FYE145,             #  S2
+    INS260, MTH215, ENG240, SEC235, MTH213,             #  S3
+    CIT365, SWE225, ACC202, MGT209, INS311, INS211,     #  S4
+    CIT285, MKT210, CIT470, OPR300, SWE320, SWE321,     #  S5 
+    CIT466, CIT460, CIT461, INS467, INS469, INS377,     #  S6
+    INS476, INS477, HRM301, ARA345, CIT480,             #  S7
+    MKT433, INS474, INS475, P_Elective,                 #  S8
+    CIT499, CIT490 ]                                    #  S9
+
+MIS: 
+  [ FYE100, FYE110, FYE120, FYE140, FYE150,             #  S1
+    FYE105, FYE125, FYE155, FYE195, FYE145,             #  S2
+    INS260, MTH215, ENG240, SEC235, MTH213,             #  S3
+    CIT365, SWE225, ACC202, MGT209, INS311, INS211,     #  S4
+    CIT285, INS361, INS363, OPR300, SWE320, SWE321,     #  S5
+    CIT466, CIT460, CIT461, INS369, INS368, INS377,     #  S6
+    INS425, INS426, INS410, HRM301, ARA345, CIT480,     #  S7
+    INS468, INS465, P_Elective,                         #  S8
+    CIT499, CIT490 ]                                    #  S9
+
+ES:
+  [ FYE100, FYE110, FYE120, FYE140, FYE150,             #  S1
+    FYE105, FYE125, FYE155, FYE195, FYE145,             #  S2
+    INS260, MTH215, ENG240, SEC235, MTH213,             #  S3
+    CIT365, SWE225, ACC202, MGT209, INS311, INS211,     #  S4
+    CIT285, INS361, INS363, OPR300, SWE320, SWE321,     #  S5
+    CIT466, CIT460, CIT461, INS369, INS368, INS377,     #  S6
+    INS362, INS463, INS464, HRM301, ARA345, CIT480,     #  S7
+    INS468, INS492, P_Elective,                         #  S8
+    CIT499, CIT490 ]                                    #  S9
+
+# Format: 
+#   Course_Group: [list_of_courses_which_can_satisfy_the_Group]
+#   Substituted_Course: [list_of_courses_which_can_substitute_the_course]
+# Note: order matters: first come first substituted
+Groups: { 
+  FYE145: [ FYE146 ]  # substitution
+}
+
+# order counts: first come, first executed
+Rules: {
+}

@@ -1,5 +1,5 @@
 Verbose:                    False
-catalog_filenames:          "_20??.yaml"
+catalog_filenames:          "_20*.yaml"
 catalog_defaults:           "_common_catalog.yaml"
 # Input_File:                 "Student Records Information - Faculty Access Portal.xlsx"
 Input_File:                 "Student Records Information - Faculty Access Portal_Fatna.xlsx"
@@ -12,7 +12,9 @@ Forecast_s_Output_File_det: "StudentsForecast_s_details.xlsx"  # detailed foreca
 
 Number_Projection_Courses:  10
 Number_Key_Courses:         3
+MaxLabs:                    2
 MinimalEnrollmentMode:      True
+GuessSubstitutions:         True
 CH_ranges:                [ { gpa: [0.0, 1.9999], minCH: 11, maxCH: 13 },     # { gpa: [ minGPA, maxGPA ], minCH: CH maxCH: CH } for each group
                             { gpa: [2.0, 4.0000], minCH: 14, maxCH: 17 } ]    # use last entry as default when cGPA=0, EarnedHours=0, and FailedCourses=0
 

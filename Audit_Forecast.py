@@ -4,6 +4,7 @@
 License:    GPLv3
 
 Version History:
+16.03.2025  3.05    new features; added a stop_gap logic for CIS-> CTI transfers; MaxLabs; co-reqs are checked both ways; failed courses out of catalog ignored; exceptions reported in log; guessed manual (memo) substitutions
 10.03.2025  3.04    improved logic; conditional substitution rule for uncounted courses
 09.03.2025  3.03    improved logic; replaced fixed minCH with a parameterized CH_ranges logic and MinimalEnrolmentMode (in config.yaml)
 07.03.2025  3.02    improved logic; key courses are selected from projection, and not from remaining in catalog
@@ -29,9 +30,6 @@ import copy
 import time
 from collections import Counter
 from tqdm import tqdm
-# added below to ignore "PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`"
-from warnings import simplefilter
-simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
 Required_Columns = ['ID','Catalog','Concentration','Campus','cGPA',
                     'CompletedCourses','CurrentCourses','FailedCourses',
@@ -85,7 +83,7 @@ for filename in glob.glob(config['catalog_filenames']):
             elif isinstance(v, dict):
                 for k1,v1 in v.items():
                     tmp[k][k1] = v1
-    catalogs[filename[1:5]] = tmp
+    catalogs[filename[1:-5]] = tmp
 
 
 def load_data(filename):
@@ -119,11 +117,13 @@ def load_data(filename):
     return df
 
 
-def drop_course(course, Catalog):
+def drop_course(course, Catalog, ErrIfNotFound = True):
     if course in Catalog:
         Catalog.remove(course)
         return True
     else:
+        if ErrIfNotFound:
+            raise ValueError(f'could not drop course:{course} from plan: {Catalog}')
         return False
 
 
@@ -227,10 +227,7 @@ def apply_rule(rules, rec,  cat, CH_earned, Course_CHs,  taken, Projected_Course
 
         if ('Substitute_Uncounted' in rule.keys() and applicable):
             (k,v), = substitution.items()
-            if not drop_course(k, cat):
-                raise ValueError(f'could not drop course:{k} from plan: {cat}')
-            # not_in_plan.remove(v)
-            # taken.append(v)
+            drop_course(k, cat)
             CH_earned += get_course_CHs(v, Course_CHs)
             if k in Projected_Courses:
                 Projected_Courses.remove(k)
@@ -238,6 +235,95 @@ def apply_rule(rules, rec,  cat, CH_earned, Course_CHs,  taken, Projected_Course
                 Must_take_Courses.remove(k)
             applied_rules.append(f'{label}(substitute:{k}->{v})')
     return '\n\t'.join(applied_rules), CH_earned
+
+
+# IAR arabic courses are not considered in all of Stop_Gap_Lgic_for_CIS_Tranfers below
+def Stop_Gap_Lgic_for_CIS_Tranfers(exception_msgs, taken, cat, satisfy_groups):
+    GenEd_Courses = {'FYE100', 'FYE140', 'FYE110', 'FYE150', 'FYE120', 'FYE105', 'FYE155', 'FYE195', 'FYE145', 'FYE125'}
+    if any(c in taken for c in ('IDS104', 'IDS206')):  # 2021
+        CIS_GenEd = {'ICB101', 'ICB102', 'ICB103', 'IDS101', 'IDS102', 'IDS103', 'IDS104', 'IDS105', 'IDS206', 'IAH244'}
+        CIS_GenEd_CHs = {  1: [ ],
+                           4: [ 'ICB101', 'ICB102', 'ICB103', 'IDS101', 'IDS102', 'IDS103', 'IDS104', 'IDS105', 'IDS206', 'IAH244' ], 
+                           'default': 3 }
+        exception_msgs.append(f'Identified as catalog-2021 CIS student Transferee; CIS Transfers follow catalog 2024')
+    else:  # 2022
+        CIS_GenEd = {'ICB101', 'ICB102', 'ICB103', 'IDS101', 'IDS102', 'IDS103', 'IDS105', 'IDS204', 'IDS220', 'IAH244'}  # also 'IAR110/111', 'IAR210/211'
+        CIS_GenEd_CHs = {  1: [ 'IAR110', 'IAR111', 'IAR210', 'IAR211' ],
+                           4: [ 'ICB101', 'ICB103', 'IDS101', 'IDS102', 'IDS103', 'IDS105', 'IDS204', 'IAH244' ], 
+                           'default': 3 }
+        if any(c in taken for c in ('IDS204', 'IDS220', 'IAR110', 'IAR111', 'IAR210', 'IAR211')):
+            exception_msgs.append(f'Identified as catalog-2022 CIS student Transferee; CIS Transfers follow catalog 2024')
+        else:
+            exception_msgs.append(f'Couldn\'t identify the CIS catalog; guessing catalog-2022 CIS student Transfer; CIS Transfers follow catalog 2024')
+
+    CIS_completed_courses = {c for c in taken if c in CIS_GenEd}
+    CHs = sum( [get_course_CHs(course, CIS_GenEd_CHs) for course in CIS_completed_courses] )
+    Satisfied_CHs = 0
+    non_GenEd = []
+
+    if 38 <= CHs <= 40:
+        if 'IAH244' in CIS_completed_courses and 'CIT305' in cat:
+            drop_course('CIT305', cat)
+            CIS_completed_courses -= {'IAH244'}
+            non_GenEd.append('IAH244')
+            satisfy_groups.append(f'IAH244(CIT305)')
+            exception_msgs.append(f'IAH244 substituted CIT305; 1CHs lost')
+            Satisfied_CHs += 3
+        if 'ICS220' in taken and 'ICB103' in CIS_completed_courses and {'SWE225', 'SWE320', 'SWE321'}.issubset(cat):
+            for course in ('SWE225', 'SWE320', 'SWE321'):
+                drop_course(course, cat)
+            CIS_completed_courses -= {'ICB103'}
+            taken.remove('ICS220')
+            non_GenEd.extend(['ICB103','ICS220'])
+            satisfy_groups.append(f'ICB103+ICS220(SWE225+SWE320+SWE321)')
+            exception_msgs.append(f'(ICB103, ICS220) substituted (SWE225, SWE320, SWE321); {get_course_CHs('ICS220', CIS_GenEd_CHs)-3}CHs lost')
+            Satisfied_CHs += 7
+        elif 'ICB102' in CIS_completed_courses and 'ENG240' in cat:
+            drop_course('ENG240', cat)
+            CIS_completed_courses -= {'ICB102'}
+            non_GenEd.append('ICB102')
+            satisfy_groups.append(f'ICB102(ENG240)')
+            exception_msgs.append(f'ICB102 substituted ENG240; {get_course_CHs('ICB102', CIS_GenEd_CHs)-3}CHs lost')
+            Satisfied_CHs += 3
+        else:
+            raise ValueError(f'\n\nError - Stop_Gap_Lgic_for_CIS_Tranfers lgic breakdown:\n\n{CHs}CHs\n\nCIS_completed_courses:{CIS_completed_courses}\n\ntaken:{taken}\n\ncat:{cat}\n\n')
+    elif 33 <= CHs <= 37:
+        if 'ICS220' in taken and 'ICB103' in CIS_completed_courses and {'SWE225', 'SWE320', 'SWE321'}.issubset(cat):
+            for course in ('SWE225', 'SWE320', 'SWE321'):
+                drop_course(course, cat)
+            CIS_completed_courses -= {'ICB103'}
+            Satisfied_CHs += get_course_CHs('ICB103', CIS_GenEd_CHs)
+            taken.remove('ICS220')
+            non_GenEd.extend(['ICB103','ICS220'])
+            satisfy_groups.append(f'ICB103+ICS220(SWE225+SWE320+SWE321)')
+            exception_msgs.append(f'(ICB103, ICS220) substituted (SWE225, SWE320, SWE321); {get_course_CHs('ICS220', CIS_GenEd_CHs)-3}CHs lost')
+            Satisfied_CHs += 7
+        elif 'ICB102' in CIS_completed_courses and 'ENG240' in cat:
+            drop_course('ENG240', cat)
+            CIS_completed_courses -= {'ICB102'}
+            non_GenEd.append('ICB102')
+            satisfy_groups.append(f'ICB102(ENG240)')
+            exception_msgs.append(f'ICB102 substituted ENG240; {get_course_CHs('ICB102', CIS_GenEd_CHs)-3}CHs lost')
+            Satisfied_CHs += 3
+        else:
+            raise ValueError(f'\n\nError - Stop_Gap_Lgic_for_CIS_Tranfers lgic breakdown:\n\n{CHs}CHs\n\nCIS_completed_courses:{CIS_completed_courses}\n\ntaken:{taken}\n\ncat:{cat}\n\n')
+
+    CHs = sum([get_course_CHs(c, CIS_GenEd_CHs) for c in CIS_completed_courses])
+    CIS_GenEd_counted_CHs = 30 if CHs>=30 else CHs
+    for course in GenEd_Courses:
+        if not drop_course(course, cat, ErrIfNotFound = False):
+            raise ValueError(f'Error - {course} not in catalog; check data and logic')
+    CIS_completed_courses_w_CHs = ', '.join([f'{c}({get_course_CHs(c, CIS_GenEd_CHs)})' for c in sorted(CIS_completed_courses)])
+    exception_msgs.append(f'{CIS_GenEd_counted_CHs}CHs FYE courses substituted with {CHs}CHs from: {CIS_completed_courses_w_CHs}')
+    if CHs > CIS_GenEd_counted_CHs:
+        exception_msgs.append(f'{CHs-CIS_GenEd_counted_CHs}CHs lost in GenEd transfer')
+    elif CHs < 30:
+        exception_msgs.append(f'{30-CHs}CHs missing from CIS GenEd; need to take CIS GenEd courses')
+    if Satisfied_CHs:
+        exception_msgs.append(f'{Satisfied_CHs}CHs satisfied from substitutions of Non-GenEd courses: {", ".join(non_GenEd)}')
+
+    return CIS_GenEd_counted_CHs+Satisfied_CHs, \
+           no_duplicates_ordered_list(list(CIS_completed_courses)+non_GenEd)
 
 
 def audit_student_registration(record, catalog_year, concentration):
@@ -253,6 +339,10 @@ def audit_student_registration(record, catalog_year, concentration):
         CompletedCourses = [clean_course_code(x) for x in rec["CompletedCourses"].split(',')]
     else:
         CompletedCourses = []
+    if rec["IncompleteCourses"] and type(rec["IncompleteCourses"]) == str:
+        IncompleteCourses = [clean_course_code(x) for x in rec["IncompleteCourses"].split(',')]
+    else:
+        IncompleteCourses = []
     if rec["CurrentCourses"]:
         CurrentCourses = [clean_course_code(x) for x in rec["CurrentCourses"].split(',')]
     else:
@@ -265,11 +355,42 @@ def audit_student_registration(record, catalog_year, concentration):
         Registered_Summer = [clean_course_code(x) for x in rec["Registered_Summer"].split(',')]
     else:
         Registered_Summer = []
+    Completed_and_Current_Courses = no_duplicates_ordered_list(CompletedCourses+CurrentCourses)
+    ReportedEarnedHours = rec["Earned Hours"] + rec["Current Credits"]
+    
+    #########################################
+    # Stop_Gap logic for CIS->CTI transfers #
+    #########################################
+    if any(c in Completed_and_Current_Courses for c in ('ICB101', 'ICB102', 'ICB103', 'IDS101', 'IDS102', 'IDS103', 'IDS104', 'IDS105')):
+        catalog_year = '2024_CIS'  # CIS Transfers follow catalog 2024
+    #########################################
+    #                   END                 #
+    #########################################
+
+    exception_msgs = []
+    taken = []
+    satisfy_groups = []
+    not_in_plan = []
+    possible_substitutions = []
     cat = copy.deepcopy(catalogs[catalog_year][concentration])
     grp = copy.deepcopy(catalogs[catalog_year]['Groups'])
     Course_CHs = copy.deepcopy(catalogs[catalog_year]['Course_CHs'])
     CoRequisites = copy.deepcopy(catalogs[catalog_year]["CoRequisites"])
     PreRequisites = copy.deepcopy(catalogs[catalog_year]["PreRequisites"])
+
+    # co-reqs go both ways
+    for course, coreq in CoRequisites.copy().items():
+        if coreq not in CoRequisites.keys():
+            CoRequisites[coreq] = course
+
+    #########################################
+    # Stop_Gap logic for CIS->CTI transfers #
+    #########################################
+    if catalog_year == '2024_CIS':
+        CIS_counted_CHs, CIS_counted_courses = Stop_Gap_Lgic_for_CIS_Tranfers(exception_msgs, Completed_and_Current_Courses, cat, satisfy_groups)
+    #########################################
+    #                   END                 #
+    #########################################
 
     #  Collapse all Pre-Reqs into a flat list to add to Key_Courses
     Key_Courses = catalogs[catalog_year]['Key_Courses'].copy()
@@ -292,23 +413,31 @@ def audit_student_registration(record, catalog_year, concentration):
                 quit()
 
     # remove completed & currently taking courses from the catalog plan & check for group/elective courses
-    taken = []
-    satisfy_groups = []
-    not_in_plan = []
-    for course in no_duplicates_ordered_list(CompletedCourses+CurrentCourses):
-        if drop_course(course, cat):
+    for course in Completed_and_Current_Courses:
+        if drop_course(course, cat, ErrIfNotFound = False):
             taken.append(course)
         else:
             course_found_in_groups = False
             for g, l in grp.items():
                 if course in l:
-                    if drop_course(g, cat):
+                    if drop_course(g, cat, ErrIfNotFound = False):
                         taken.append(course)
                         satisfy_groups.append(f'{course}({g})')
                         course_found_in_groups = True
                         break
             if not course_found_in_groups:
+                #########################################
+                # Stop_Gap logic for CIS->CTI transfers #
+                #########################################
+                if catalog_year == '2024_CIS':
+                    if course in CIS_counted_courses:
+                        continue
+                #########################################
+                #                   END                 #
+                #########################################
                 not_in_plan.append(course)
+                if course not in IncompleteCourses:
+                    possible_substitutions.append(course)
 
     # remove courses from plan when they have unsatisfied pre-requisites
     courses_w_unsatisfied_prereqs = []
@@ -327,18 +456,49 @@ def audit_student_registration(record, catalog_year, concentration):
                 if all(c in taken for c in PreReq):
                     metPreReq = True
             if not metPreReq:
-                if not drop_course(course, cat):
-                    raise ValueError(f'could not drop course:{course} from plan: {cat}')
+                drop_course(course, cat)
                 courses_w_unsatisfied_prereqs.append(course)
                 courses_w_unsatisfied_prereqs_and_why.append(f'{course}({PreReq})')
 
     # calculate registered & earned CH
     CH_registered = 0
     CH_earned = 0
+    #########################################
+    # Stop_Gap logic for CIS->CTI transfers #
+    #########################################
+    if catalog_year == '2024_CIS':
+        CH_earned = CIS_counted_CHs
+    #########################################
+    #                   END                 #
+    #########################################    
     for c in Registered + Registered_Summer:
         CH_registered += get_course_CHs(c, Course_CHs)
     for c in taken:
         CH_earned += get_course_CHs(c, Course_CHs)
+
+    # Guess manual (Memo) course substitutions
+    possible_substituted = []
+    if possible_substitutions:
+        possible_substituted = [c for c in cat if c not in IncompleteCourses]
+        possible_substituted_CHs = sum([get_course_CHs(c, Course_CHs) for c in possible_substituted])
+        possible_substitutions_CHs = sum([get_course_CHs(c, Course_CHs) for c in possible_substitutions])
+        if ReportedEarnedHours - CH_earned > 0:
+            if possible_substitutions_CHs >= possible_substituted_CHs and config['GuessSubstitutions']:
+                CH_earned += possible_substituted_CHs
+                for course in possible_substituted:
+                    if course in cat:
+                        drop_course(course, cat)
+                    if course in courses_w_unsatisfied_prereqs:
+                        courses_w_unsatisfied_prereqs.remove(course)
+                        for x in courses_w_unsatisfied_prereqs_and_why:
+                            if course in x:
+                                courses_w_unsatisfied_prereqs_and_why.remove(x)
+            else:
+                possible_substituted = []
+                possible_substituted_CHs = 0
+        else:
+            possible_substituted = []
+            possible_substituted_CHs = 0
 
     # prep Projected & Must_take_Courses
     Projected_Courses = []
@@ -347,11 +507,14 @@ def audit_student_registration(record, catalog_year, concentration):
     total_registration = no_duplicates_ordered_list(Registered + Registered_Summer + CurrentCourses)
     for course in FailedCourses:  # start w/ failed courses
         if course not in total_registration:  # if already registered for, skip
-            if course not in Projected_Courses:
-                Projected_Courses.append(course)
-            if course not in Must_take_Courses:
-                Must_take_Courses.append(course)
-                Must_take_Courses_and_Why.append(f'{course}(Failed)')
+            if course in cat:  # must be in student current plan
+                if course not in Projected_Courses:
+                    Projected_Courses.append(course)
+                if course not in Must_take_Courses:
+                    Must_take_Courses.append(course)
+                    Must_take_Courses_and_Why.append(f'{course}(Failed)')
+            else:
+                exception_msgs.append(f'Failed course ignored; not in student current plan: {course}')
     for course in total_registration:  # add not taken co-requisites of currently registered courses
         if course in CoRequisites.keys():
             coreq = CoRequisites[course]
@@ -414,9 +577,10 @@ def audit_student_registration(record, catalog_year, concentration):
     add_courses = []
     add_co_requisites = []
     add_CH = 0
+    labs = 0
     CH_ranges = config['CH_ranges']
     MinimalEnrollmentMode = config['MinimalEnrollmentMode']
-    if rec['cGPA'] == 0 and rec['Earned Hours'] == 0 and len(FailedCourses) == 0:
+    if rec['cGPA'] == 0 and len(FailedCourses) == 0:
         minCH = CH_ranges[-1]['minCH']
         maxCH = CH_ranges[-1]['maxCH']
     else:
@@ -443,32 +607,52 @@ def audit_student_registration(record, catalog_year, concentration):
                         coreq = None
 
                 if (CH_registered + add_CH + tmp_course_ch + tmp_coreq_ch) <= maxCH:
+                    if (tmp_course_ch == 1 or tmp_coreq_ch == 1) and labs >= config['MaxLabs']:
+                        continue  # skip course and lab if registered for too many labs 
                     add_courses.append(course)
+                    if tmp_course_ch == 1:
+                        labs += 1
                     if coreq:
                         add_courses.append(coreq)
                         add_co_requisites.append(coreq)
+                        if tmp_coreq_ch == 1:
+                            labs += 1
                     add_CH += tmp_course_ch + tmp_coreq_ch
 
+    if exception_msgs:
+        print_log(f'   ~~~~~~~~~~~~~~~', verbose_to_screen = verbose)
+        print_log(f'       Exceptions:\n\t\t{"\n\t\t".join(exception_msgs)}', verbose_to_screen = verbose)
+        print_log(f'   ~~~~~~~~~~~~~~~', verbose_to_screen = verbose)
     print_log(f'                  Catalog: {catalog_year}', verbose_to_screen = verbose)
     print_log(f'                     cGPA: {rec['cGPA']}', verbose_to_screen = verbose)
     print_log(f'            Concentration: {concentration}', verbose_to_screen = verbose)
-    print_log(f'            Taken courses: {", ".join(taken)}', verbose_to_screen = verbose)
-    print_log(f'         Satisfied groups: {", ".join(satisfy_groups)}', verbose_to_screen = verbose)
-    print_log(f'           Failed courses: {", ".join(FailedCourses)}', verbose_to_screen = verbose)
+    print_log(f'            Taken Courses: {", ".join(taken)}', verbose_to_screen = verbose)
+    print_log(f' Satisfy Group/Substitute: {", ".join(satisfy_groups)}', verbose_to_screen = verbose)
+    print_log(f'           Failed Courses: {", ".join(FailedCourses)}', verbose_to_screen = verbose)
     print_log(f'    Uncounted (NotInPlan): {", ".join(not_in_plan)}', verbose_to_screen = verbose)
+    if possible_substitutions and possible_substituted:
+        print_log(f'    Guessed Substitutions: {", ".join(possible_substitutions)} ({possible_substitutions_CHs}CHs) --> {", ".join(possible_substituted)} ({possible_substituted_CHs}CHs)', verbose_to_screen = verbose)
     print_log(f'          Current Courses: {", ".join(CurrentCourses)}', verbose_to_screen = verbose)
     print_log(f'Summer Registered Courses: {", ".join(Registered_Summer)}', verbose_to_screen = verbose)
     print_log(f'       Registered Courses: {", ".join(Registered)}', verbose_to_screen = verbose)
     print_log(f'           Registered CHs: {CH_registered}', verbose_to_screen = verbose)
     print_log(f'               Earned CHs: {CH_earned}', verbose_to_screen = verbose)
-    print_log(f'\nApplied rules:\n\t{rules_msg}\n', verbose_to_screen = verbose)
-    print_log(f' Remaining in plan: {", ".join(cat+courses_w_unsatisfied_prereqs)}', verbose_to_screen = verbose)
+    #########################################
+    # Stop_Gap logic for CIS->CTI transfers #
+    #########################################
+    if catalog_year == '2024_CIS':
+        print_log(f'                         = {CH_earned-CIS_counted_CHs} earned + {CIS_counted_CHs} transferred from CIS', verbose_to_screen = verbose)
+    #########################################
+    #                   END                 #
+    #########################################
+    print_log(f'\nApplied Rules:\n\t{rules_msg}\n', verbose_to_screen = verbose)
+    print_log(f' Remaining in Plan: {", ".join(cat+courses_w_unsatisfied_prereqs)}', verbose_to_screen = verbose)
     print_log(f'unsatisfied PreReq: {", ".join(courses_w_unsatisfied_prereqs_and_why)}\n', verbose_to_screen = verbose)
-    print_log(f' Projected courses: {", ".join(Projected_Courses)}', verbose_to_screen = verbose)
-    print_log(f' Must take courses: {", ".join(Must_take_Courses_and_Why)}', verbose_to_screen = verbose)
-    print_log(f'       add_courses: {", ".join(add_courses)}', verbose_to_screen = verbose)
-    # print_log(f'     added co-reqs: {", ".join(add_co_requisites)}', verbose_to_screen = verbose)  # also included in add_courses
-    print_log(f'            add_CH: {add_CH}', verbose_to_screen = verbose)
+    print_log(f' Projected Courses: {", ".join(Projected_Courses)}', verbose_to_screen = verbose)
+    print_log(f' Must take Courses: {", ".join(Must_take_Courses_and_Why)}', verbose_to_screen = verbose)
+    print_log(f'       Add_Courses: {", ".join(add_courses)}', verbose_to_screen = verbose)
+    # print_log(f'     Added Co-Reqs: {", ".join(add_co_requisites)}', verbose_to_screen = verbose)  # also included in add_courses
+    print_log(f'            Add_CH: {add_CH}', verbose_to_screen = verbose)
 
     # Stochastic forecasting 
     add_courses_extended = []
@@ -502,16 +686,18 @@ def audit_student_registration(record, catalog_year, concentration):
                                     add_co_requisites_extended.append(coreq)
                                     add_CH_extended += tmp_course_ch
 
-        print_log(f'~~~~~~~~~~~~~~~~~~', verbose_to_screen = verbose)
+        print_log(f'   ~~~~~~~~~~~~~~~', verbose_to_screen = verbose)
         print_log(f'Identifying additional courses for stochastic forecasting', verbose_to_screen = verbose)
         print_log(f'add_courses_extend: {", ".join(add_courses_extended)}', verbose_to_screen = verbose)
         # print_log(f' added co-reqs_ext: {", ".join(add_co_requisites_extended)}', verbose_to_screen = verbose)  # also included in add_courses_extended
         print_log(f'     add_CH_extend: {add_CH_extended}', verbose_to_screen = verbose)
 
     return {
+        'UsedCatalog': catalog_year,
         'taken': ', '.join(taken),
         'satisfy_groups': ', '.join(satisfy_groups),
         'Uncounted': ', '.join(not_in_plan),
+        'possible_substitutions': ', '.join(possible_substitutions),
         'Remaining_in_plan': ', '.join(cat+courses_w_unsatisfied_prereqs),
         'unsatisfied_PreReq': ', '.join(courses_w_unsatisfied_prereqs_and_why),
         'Projected_Courses': ', '.join(Projected_Courses),
@@ -520,6 +706,7 @@ def audit_student_registration(record, catalog_year, concentration):
         'Courses_to_add_CH': str(add_CH),
         'CH_earned': str(CH_earned),
         'CH_registered': str(CH_registered),
+        'Exception_Mgs': exception_msgs,
         'Applied_Rules': rules_msg,
         'Courses_to_add_extend': ', '.join(add_courses_extended),
         'Courses_to_add_CH_extend': str(add_CH_extended),
@@ -530,8 +717,16 @@ if __name__ == "__main__":
     n = 0
     df = load_data(config['Input_File'])
     print_log(f'loading input file: {config['Input_File']}', verbose_to_screen = True)
-    df_forecast_d = pd.DataFrame({k: pd.Series(dtype=df[k].dtype) for k in Forecast_Columns})
-    df_forecast_s = pd.DataFrame({k: pd.Series(dtype=df[k].dtype) for k in Forecast_Columns})
+
+    All_Courses = {clean_course_code(x) for x in ','.join(df['CompletedCourses'].astype(str)).split(',')}
+    All_Courses.union({clean_course_code(x) for x in ','.join(df['IncompleteCourses'].astype(str)).split(',')})
+    if '' in All_Courses:
+        All_Courses.remove('')
+    All_Courses =sorted(All_Courses)
+    df_forecast_d = pd.DataFrame({k: pd.Series(dtype=df[k].dtype) for k in Forecast_Columns} | \
+                                 {k: pd.Series(dtype=int) for k in All_Courses})
+    df_forecast_s = pd.DataFrame({k: pd.Series(dtype=df[k].dtype) for k in Forecast_Columns} | \
+                                 {k: pd.Series(dtype=float) for k in All_Courses})
 
     # get additional end_of_semester data for columns not in FAP: FailedCourses, Registered_Summer
     # if config['Registration_Data']:
@@ -544,20 +739,21 @@ if __name__ == "__main__":
         print_log(f'Info: found {no_concentration_count} records students with "Null" Concentrations, using Major instead.', verbose_to_screen = True)
         df.loc[no_concentration_mask,'Concentration'] = df.loc[no_concentration_mask,'Major']
 
-    output_columns = ['Audit_taken', 'Audit_satisfy_groups', 'Audit_uncounted', 
+    output_columns = ['Audit_UsedCatalog', 'Audit_taken', 'Audit_satisfy_groups', 'Audit_uncounted', 
+                      'Audit_possible_substitutions', 
                       'Audit_Remaining_in_plan','Audit_unsatisfied_PreReq',
                       'Audit_Projected_Courses', 'Audit_Must_take_Courses', 
-                      'Audit_Courses_to_add', 'Courses_to_add_CH', 
-                      'Audit_CH_earned', 'CH_registered',
-                      'Audit_Applied_Rules',
-                      'Courses_to_add_extend', 'Courses_to_add_CH_extend']
+                      'Audit_Courses_to_add', 'Audit_Courses_to_add_CH', 
+                      'Audit_CH_earned', 'Audit_CH_registered',
+                      'Audit_Exception_Mgs', 'Audit_Applied_Rules',
+                      'Audit_Courses_to_add_extend', 'Audit_Courses_to_add_CH_extend']
     for c in output_columns:
         df[c] = ''
     warnings = []
 
     print_log(f'Auditing students...', verbose_to_screen = True)
-    course_list = []
-    course_list_extend = []
+    course_list = All_Courses.copy()
+    course_list_extend = All_Courses.copy()
 
     for index, row in tqdm(df.iterrows(), total=len(df)):
         n += 1
@@ -592,11 +788,10 @@ if __name__ == "__main__":
         for c in add_courses:
             if c not in course_list:
                 course_list.append(c)
-                df_forecast_d.loc[index,c] = 1
+                df_forecast_d.loc[index,c] = 0
             elif pd.isnull(df_forecast_d.loc[index,c]):
-                df_forecast_d.loc[index,c] = 1
-            else:
-                df_forecast_d.loc[index,c] += 1
+                df_forecast_d.loc[index,c] = 0
+            df_forecast_d.loc[index,c] += 1
 
         # Forecast: Stochastic
         if config['Perform_Stochastic_forecasting']:

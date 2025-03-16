@@ -5,9 +5,10 @@
 #   number_of_CH: [list_of_ courses]
 #   default: Default_number_of_CH
 Course_CHs: {
-  0: [  ADV100, ARA030, ALL040, AZU100, DMT010],
-  1: [  INS211, SWE321, CIT461, INS469, INS477, INS475, INS363, INS368, INS464, INS426,
-        NET257, SEC336, NET352, SEC433 ],
+  0: [ ADV100, ARA030, ALL040, AZU100, DMT010 ],
+  1: [ INS211, SWE321, CIT461, INS469, INS477, INS475, INS363, INS368, INS464, INS426,
+       NET257, SEC336, NET352, SEC433,
+       IAR110, IAR111, IAR210, IAR211 ],
   2: [],
   4: [],
   default: 3 
@@ -100,7 +101,7 @@ Groups: {
   MTH213: [ MTH281, ICS214 ],  # substitutions
   MTH281: [ MTH213, ICS214 ],  # substitutions
   HSS255: [ FYE125, GEN255 ],  # substitutions
-  FYE125: [ HSS255 ],  # substitutions
+  FYE125: [ HSS255, GEN255 ],  # substitutions
   GEN110: [ FYE110, COL110 ],  # substitutions
   GEN220: [ FYE150  ],  # substitutions
   ISL135: [ FYE120, GEN135, COL135 ],  # substitutions
@@ -110,7 +111,7 @@ Groups: {
   GEN120: [ ZU_Elective, COL120 ],  # GEN120 is discontinued. Students should take a ZU Elective to substitute it. Needs memo -- to double check ??
   GEN140: [ ENG140, COL140 ],
   GEN145: [ ENG145, COL145 ],
-  ENG140: [ GEN140 ],
+  ENG140: [ GEN140, FYE140 ],
   ENG145: [ GEN145 ],
   ARA320: [ ARA345 ],
   ARA345: [ ARA320 ],
@@ -202,23 +203,25 @@ Groups: {
     HIS251, HIS204, #counted as Zu- elective in catalog 2019 
     HIS303, #???
     FYE150, 
-    CHL100, CHL200, CHL300, CHL400, EDC324 #2024
+    CHL100, CHL200, CHL300, CHL400, EDC324, #2024
+    HIS203, HIS303,HIS201
     ]
 }
 
 # order counts: first come, first executed
 Rules: {
-  "Substitute ARA345 for heritage students with an uncounted elective" : {
-    Skill: [ HT ],
-    Substitute_Uncounted: { 'ARA345': [     ANT261, ANT302, ANT362, ANT385, ARA211, ARA222, ARA235, ARA335, 
-    ARA380, ARM375, ARM395, ART201, ART205, ART220, ART221, ART251, CIT210, CIT480, COM200, COM230, COM240, 
-    EDC207, EDP202, EDP307, ENG240, ENG322, ENG331, ENG360, ENG363, ENG364, ENG365, ENG367, ENG368, ENV240, 
-    ENV241, FLS361, GEN110, GEN150, GEN175, GEN185, GEN195, GEN220, HIS321, HIS381, HSS101, HSS353, IMT375, 
-    INS260, ISC383, ISL209, ISL210, LAW200, LAW225, MGT209, MKT210, MTH103, MTH121, MTH213, MTH214, MTH215, 
-    MTH281, NET255, NUT205, PBH267, PHL201, PHY100, PHY210, POL227, POL335, PSY212, PSY363, SEC235, SOC326, 
-    SOC341, SOC374, EDC324, TCC371, GEN175, MTH212, HIS201, TCC375, HIS251, HIS204, HIS303, FYE150, CHL100, 
-    CHL200, CHL300, CHL400, EDC324 ]},
-  },
+  # *** New substitution guessing code renders this  (and conflicts with it) ***
+  # "Substitute ARA345 for heritage students with an uncounted elective" : {
+  #   Skill: [ HT ],
+  #   Substitute_Uncounted: { 'ARA345': [     ANT261, ANT302, ANT362, ANT385, ARA211, ARA222, ARA235, ARA335, 
+  #   ARA380, ARM375, ARM395, ART201, ART205, ART220, ART221, ART251, CIT210, CIT480, COM200, COM230, COM240, 
+  #   EDC207, EDP202, EDP307, ENG240, ENG322, ENG331, ENG360, ENG363, ENG364, ENG365, ENG367, ENG368, ENV240, 
+  #   ENV241, FLS361, GEN110, GEN150, GEN175, GEN185, GEN195, GEN220, HIS321, HIS381, HSS101, HSS353, IMT375, 
+  #   INS260, ISC383, ISL209, ISL210, LAW200, LAW225, MGT209, MKT210, MTH103, MTH121, MTH213, MTH214, MTH215, 
+  #   MTH281, NET255, NUT205, PBH267, PHL201, PHY100, PHY210, POL227, POL335, PSY212, PSY363, SEC235, SOC326, 
+  #   SOC341, SOC374, EDC324, TCC371, GEN175, MTH212, HIS201, TCC375, HIS251, HIS204, HIS303, FYE150, CHL100, 
+  #   CHL200, CHL300, CHL400, EDC324 ]},
+  # },
     "CIT490 can only be one of the last two courses" : {
     ECHiP: [114,999],
     If_Not_Drop : [CIT490]
@@ -270,3 +273,18 @@ Rules: {
     Note : "Check if NotInPlan course(s) can be counted as elective or substitute a discontinued course"
   },
 }
+
+# added:
+# ZU Electives: HIS203, HIS303, HIS201
+# FYE125: [ HSS255 , GEN255],  # substitut
+#ions, added GEN255
+# Equal_Catalog_Years: {   "2014": "2019",
+# In catalog 19: replaced 330/331 with 432/433, and added the substitutions below
+  ## SEC432: [SEC330],
+  ##  SEC433: [SEC331],
+# In catalog 19 and 2020: replaced CIT300 with CIT285, and added the substitutions below
+  ## CIT285: [ CIT300],
+# In catalog 2020: replaced ENG145 with FYE140, and added the substitutions below
+  ##FYE140: [ENG145]
+# In catalog 2019: replaced GEN145 with FYE140, and added the substitutions below
+  ##FYE140: [GEN145]

@@ -25,9 +25,9 @@ Key_Courses: [ ]
 # Concentrations' Catalog entries; Order determines priority
 SECNET:
   [ CIT210, ENG140, ARA130, GroupA, GroupD,              #  S1
-    MTH215, SEC235, ENG145, ISL135, GroupA,              #  S2
+    MTH215, SEC235, FYE140, ISL135, GroupA,              #  S2
     ENG240, SWE225, NET256, NET257, MTH281, GroupG,      #  S3
-    CIT365, CIT300, SEC335, SEC336, CIT315, SWE245,      #  S4
+    CIT365, CIT285, SEC335, SEC336, CIT315, SWE245,      #  S4
     SWE320, SWE321, NET351, NET352, ARA345, CIT305,      #  S5
     CIT460, CIT461, SEC432, SEC433, INS377, ZU_Elective, #  S6
     CIT466, SEC435, CIT480, FYE125, ZU_Elective,         #  S7
@@ -36,9 +36,9 @@ SECNET:
 
 WAM:
   [ CIT210, ENG140, ARA130, GroupA, GroupD,             #  S1
-    MTH215, SEC235, ENG145, ISL135, GroupA,             #  S2
+    MTH215, SEC235, FYE140, ISL135, GroupA,             #  S2
     ENG240, SWE225, NET256, NET257, MTH281, GroupG,     #  S3
-    CIT365, CIT300, SWE245, IMT375, CIT315,             #  S4
+    CIT365, CIT285, SWE245, IMT375, CIT315,             #  S4
     SWE320, SWE321, IMT340, ARA345, CIT305,             #  S5
     CIT460, CIT461, SWE346, SWE371, CIT372, INS377,     #  S6
     IMT376, CIT466, CIT480, FYE125, ZU_Elective,        #  S7
@@ -47,7 +47,7 @@ WAM:
 
 BI:  
   [ MTH215, ENG140, ARA130, CIT210, GroupA,              #  S1
-    INS260, ENG145, MTH213, ISL135, GroupD,              #  S2
+    INS260, FYE140, MTH213, ISL135, GroupD,              #  S2
     ENG240, SEC235, SWE225, ACC202, GroupA,              #  S3
     CIT365, CIT285, MGT209, OPR300, GroupG,              #  S4
     SWE320, SWE321, MKT210, CIT470, HRM301, ARA345,      #  S5 
@@ -58,7 +58,7 @@ BI:
 
 MIS: 
   [ MTH215, ENG140, ARA130, CIT210, GroupA,             #  S1
-    INS260, ENG145, MTH213, ISL135, GroupD,             #  S2
+    INS260, FYE140, MTH213, ISL135, GroupD,             #  S2
     ENG240, SEC235, SWE225, ACC202, GroupA,             #  S3
     CIT365, CIT285, MGT209, OPR300, GroupG,             #  S4
     INS361, CIT372, HRM301, ARA345, ZU_Elective,        #  S5
@@ -69,7 +69,7 @@ MIS:
 
 ES:
   [ ENG140, MTH215, CIT210, ARA130, GroupA,             #  S1
-    INS260, ENG145, MTH213, ISL135, GroupD,             #  S2
+    INS260, FYE140, MTH213, ISL135, GroupD,             #  S2
     ENG240, SEC235, SWE225, ACC202, GroupA,             #  S3
     CIT365, MGT209, CIT285, OPR300, GroupG,             #  S4
     INS361, HRM301, IMT375, ARA345, ZU_Elective,        #  S5
@@ -83,8 +83,14 @@ ES:
 #   Substituted_Course: [list_of_courses_which_can_substitute_the_course]
 # Note: order matters: first come first substituted
 Groups: { 
+  CIT285: [ CIT300],
+  FYE140: [ ENG145],
 }
 
 # order counts: first come, first executed
 Rules: {
 }
+# In catalog 2020: replaced ENG145 with FYE140, and added the substitutions below
+  ##FYE140: [ENG145]
+# In catalog 19 and 2020: replaced CIT300 with CIT285, and added the substitutions below
+  ## CIT285: [ CIT300],

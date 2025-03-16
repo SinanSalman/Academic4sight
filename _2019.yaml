@@ -25,21 +25,22 @@ Key_Courses: [ ]
 # Concentrations' Catalog entries; Order determines priority
 SECNET:
   [ GEN110, GEN120, ARA130, GEN140, GEN150,              #  S1
-    ISL135, GEN145, GEN175, GEN185, GEN195,              #  S2
+    ISL135, FYE140, GEN175, GEN185, GEN195,              #  S2
     GEN220, FYE125, CIT210, MTH215, ENG240,              #  S3
     SEC235, SWE225, NET256, NET257, MTH281, SWE245,      #  S4
-    CIT365, CIT300, CIT315, SWE320, SWE321, ARA320,      #  S5
+    CIT365, CIT285, CIT315, SWE320, SWE321, ARA320,      #  S5
     SEC335, SEC336, NET351, NET352, CIT305, INS377,      #  S6
-    CIT460, CIT461, CIT466, SEC330, SEC331, SEC435,      #  S7
+    #CIT460, CIT461, CIT466, SEC330, SEC331, SEC435,      #  S7
+    CIT460, CIT461, CIT466, SEC432, SEC433, SEC435,      #  S7
     CIT480, NET455, SEC430,                              #  S8
     CIT499, CIT490 ]                                     #  S9
 
 WAM:
   [ GEN110, GEN120, ARA130, GEN140, GEN150,             #  S1
-    ISL135, GEN145, GEN175, GEN185, GEN195,             #  S2
+    ISL135, FYE140, GEN175, GEN185, GEN195,             #  S2
     GEN220, FYE125, CIT210, MTH215, ENG240,             #  S3
     SEC235, SWE225, NET256, NET257, MTH281, SWE245,     #  S4
-    CIT365, CIT300, SWE320, SWE321, IMT375, CIT315,     #  S5
+    CIT365, CIT285, SWE320, SWE321, IMT375, CIT315,     #  S5
     IMT340, ARA320, CIT305, SWE346, SWE371,             #  S6
     CIT460, CIT461, CIT372, INS377, CIT470,             #  S7
     IMT376, CIT466, CIT480,                             #  S8
@@ -47,10 +48,10 @@ WAM:
 
 BI:  
   [ GEN110, GEN120, ARA130, GEN140, GEN150,              #  S1
-    ISL135, GEN145, GEN175, GEN185, GEN195,              #  S2
+    ISL135, FYE140, GEN175, GEN185, GEN195,              #  S2
     GEN220, FYE125, CIT210, MTH215, ENG240,              #  S3       
     INS260, SEC235, MTH213, SWE225, ACC202,              #  S4
-    CIT365, MGT209, CIT300, FIN308, MKT210,              #  S5 
+    CIT365, MGT209, CIT285, FIN308, MKT210,              #  S5 
     OPR300, SWE320, SWE321, CIT466, HRM301, ARA320,      #  S6
     CIT470, CIT460, CIT461, INS467, INS377,              #  S7
     CIT480, MKT433, INS476, INS477,                      #  S8
@@ -58,10 +59,10 @@ BI:
 
 MIS: 
   [ GEN110, GEN120, ARA130, GEN140, GEN150,              #  S1
-    ISL135, GEN145, GEN175, GEN185, GEN195,              #  S2
+    ISL135, FYE140, GEN175, GEN185, GEN195,              #  S2
     GEN220, FYE125, CIT210, MTH215, ENG240,              #  S3       
     INS260, SEC235, MTH213, SWE225, ACC202,              #  S4
-    CIT365, MGT209, CIT300, FIN308, INS361,              #  S5
+    CIT365, MGT209, CIT285, FIN308, INS361,              #  S5
     OPR300, INS369, HRM301, CIT372, ARA320,              #  S6
     CIT466, CIT460, INS377, INS410, SEC430,              #  S7
     CIT480, INS468, INS465,                              #  S8
@@ -69,10 +70,10 @@ MIS:
 
 ES:
   [ GEN110, GEN120, ARA130, GEN140, GEN150,              #  S1
-    ISL135, GEN145, GEN175, GEN185, GEN195,              #  S2
+    ISL135, FYE140, GEN175, GEN185, GEN195,              #  S2
     GEN220, FYE125, ENG240, CIT210, MTH215,              #  S3       
     INS260, SEC235, MTH213, SWE225, ACC202,              #  S4
-    CIT365, MGT209, CIT300, INS361, FIN308,              #  S5
+    CIT365, MGT209, CIT285, INS361, FIN308,              #  S5
     OPR300, INS362, HRM301, IMT375, ARA320,              #  S6
     CIT466, CIT460, INS369, INS377, INS468,              #  S7
     INS463, CIT480, INS492,                              #  S8
@@ -83,10 +84,20 @@ ES:
 #   Substituted_Course: [list_of_courses_which_can_substitute_the_course]
 # Note: order matters: first come first substituted
 Groups: { 
-  SEC330: [ SEC432],
-  SEC331: [ SEC433],
+  SEC432: [ SEC330],
+  SEC433: [ SEC331],
+  CIT285: [ CIT300],
+  FYE140: [ GEN145, COL145, ENG145], 
 }
 
 # order counts: first come, first executed
 Rules: {
 }
+
+# In catalog 2019: replaced GEN145 with FYE140, and added the substitutions below
+  ##FYE140: [GEN145]
+# In catalog 19 and 2020: replaced CIT300 with CIT285, and added the substitutions below
+  ## CIT285: [ CIT300],
+# In catalog 19: replaced 330/331 with 432/433, and added the substitutions below
+  ## SEC432: [SEC330],
+  ##  SEC433: [SEC331],
