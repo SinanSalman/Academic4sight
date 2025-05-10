@@ -12,11 +12,16 @@
 
 ## Overview
 
-This system is designed to audit and plan student registrations by analyzing course completion and projecting future coursework requirements based on a set of predefined rules and configurations.
+Academic4Sight is a robust academic audit and course forecasting engine built in Python. It processes student academic records to assess their current progress, apply catalog rules, and predict future semester enrollments using deterministic and stochastic models.
 
-The system reads student data from an Excel file and course configurations from YAML files. It then processes each student's academic record to determine their completed, failed, and remaining courses. Based on this information, the program generates a course plan and projections for each student.
-
-The system also generates forecasts for students demands per course, allowing accurate planning of resources.
+**Key Features**
+- Audit Engine: Validates student progress against prerequisites, co-requisites, and catalog requirements.
+- Forecasting:
+  - Deterministic: Rule-based, fixed predictions.
+  - Stochastic: Simulates student registration behavior using probabilistic models.
+- Course Substitutions: Automatically handles group electives, substitutions, and catalog transitions.
+- Excel Integration: Inputs and outputs are managed via .xlsx files.
+- configurable system: course configurations from YAML files. 
 
 ## Dependencies
 
@@ -27,16 +32,18 @@ The program requires the following Python libraries:
 - `glob`
 - `copy`
 - `time`
+- `collections`
+- `tqdm`
 
 These can be installed using pip:
 
 ```sh
-pip install pandas pyyaml
+pip install pandas openpyxl tqdm pyyaml
 ```
 
 ## Configuration Files
 
-### `_config.yaml`
+### `academic4sight_config.yaml`
 
 This YAML file contains various configurations, including file formats, verbosity settings, concentration mappings, and equivalent catalog years.
 
@@ -51,11 +58,11 @@ Verbose: False
 #### Catalog Filenames
 
 ```yaml
-catalog_filenames: "_20??.yaml"
-catalog_defaults: "_common_catalog.yaml"
+catalog_filenames: "catalogs/20??.yaml"
+catalog_defaults:  "catalogs/_common_catalog.yaml"
 ```
 
-- **Description**: Specifies the pattern for catalog filenames. The pattern `_20??.yaml` matches catalog files for the years 2000 to 2099. ***catalog_defaults*** is the base catalog information that is extended by the `_20xx.yaml` files.
+- **Description**: Specifies the pattern for catalog filenames. The pattern `20??.yaml` matches catalog files for the years 2000 to 2099. ***catalog_defaults*** is the base catalog information that is extended by the `20xx.yaml` files.
 
 
 #### Input and Output Data Files
@@ -63,20 +70,52 @@ catalog_defaults: "_common_catalog.yaml"
 ```yaml
 Input_Data_File: "Students.xlsx"
 Audit_Output_File: "StudentsAudit.xlsx"
-Forecast_Output_File: "StudentsForecast.xlsx"
+Forecast_d_Output_File_sum: "StudentsForecast_d_summary.xlsx"
+Forecast_d_Output_File_det: "StudentsForecast_d_details.xlsx"
+Forecast_s_Output_File_sum: "StudentsForecast_s_summary.xlsx"
+Forecast_s_Output_File_det: "StudentsForecast_s_details.xlsx"
 ```
 
+**Descriptions**:
 - **Input_Data_File**: The Excel file containing student data.
 - **Audit_Output_File**: The Excel file where the audited student data will be saved.
-- **Forecast_Output_File**: The Excel file where the forecast summary will be saved.
+- **Forecast_d_Output_File_sum**: forecast summary - Deterministic
+- **Forecast_d_Output_File_det**: detailed forecast - Deterministic
+- **Forecast_s_Output_File_sum**: forecast summary - Stochastic
+- **Forecast_s_Output_File_det**: detailed forecast - Stochastic
 
 #### Projection Parameters
 ```yaml
 Number_Projection_Courses: 10
 Number_Key_Courses:        3
+MaxLabs:                   2
+MinimalEnrollmentMode:     True
+GuessSubstitutions:        True
+CH_ranges:                [ { gpa: [0.0, 1.9999], minCH: 11, maxCH: 13 }
+                            { gpa: [2.0, 4.0000], minCH: 14, maxCH: 16 } ]
+Allowed_Duplicate_Courses: [ GroupA, GroupD, GroupG, P_Elective, ZU_Elective ]
 ```
 
-- **Description**: The number of forecasted courses and the number of key courses to prioritize when suggesting enrolment options.
+**Descriptions**:
+- **Number_Projection_Courses**: The number of forecasted courses when suggesting enrolment options.
+- **Number_Key_Courses**: The number of key courses to prioritize when suggesting enrolment options.
+- **MaxLabs: Max number of Labs per semester
+- **MinimalEnrollmentMode**: Seek Minimal Enrollment with in the allowed range
+- **GuessSubstitutions**: Substitutions are guessed if allowed and plausible based on earned CH differences
+- **CH_ranges**: allowable registration Credit Hours ranges by GPA brackets
+- **Allowed_Duplicate_Courses**: 'Group' courses that can repeat in the catalog
+
+#### Stochastic forecasting parameters
+```yaml
+Perform_Stochastic_forecasting:       False
+First_choice_ratio:                   0.75  
+Excluded_from_stochastic_forecasting: [ CIT490, CIT499 ]
+```
+
+**Descriptions**:
+- **Perform_Stochastic_forecasting**: to enable the logic or not
+- **First_choice_ratio**: the ratio of students who will register in their first choice courses (vs. second choice courses)
+- **Excluded_from_stochastic_forecasting**: courses that should stick with deterministic forecasting
 
 #### Concentrations
 
@@ -175,10 +214,17 @@ PreRequisites: {
 ```
 
 #### Key/important courses
-A list of key/important courses to be prioritized over other projection courses. Pre-requisite courses will be added automatically to this list. The list is in decreasing priority (order counts).
+A list of key/important courses to be prioritized over other projection courses by concentration; 'ALL' counts for all concentrations. Pre-requisite courses will be considered automatically. The list is in decreasing priority (order counts).
 
 ```yaml
-Key_Courses: [ Course ]
+Key_Courses: {
+    ALL: [],
+    SECNET: [],
+    WAM: [],
+    BI: [Course],
+    MIS: [],
+    ES: []
+}
 ```
 
 #### Concentration Plans
@@ -218,7 +264,7 @@ Rules:
   }
 ```
 
-***CONDITION***: `Status`, `Skill`, `Campus`, `ProjectionCount`, `ECHiP`, `MatchAll`, `MatchAny`, `MissingAny`, and `NotInPlanCount`
+***CONDITION***: `Status`, `Skill`, `Campus`, `ProjectionCount`, `ECHiP`, `MatchAll`, `MatchAny`, `MissingAny`, `Replace`, `Substitute_Uncounted`, and `NotInPlanCount`
 
 ***ACTIONS***: `Drop`, `If_Not_Drop`, and `Note`
 
@@ -226,12 +272,12 @@ Rules:
 
 The program is designed to be executed as a standalone program. The main steps are:
 
-1. Read the configuration file `_config.yaml`.
-2. Load catalog files (`_catalog_defaults.yaml` and `_202x.yaml`) & student data.
+1. Read the configuration file `academic4sight_config.yaml`.
+2. Load catalog files (`_catalog_defaults.yaml` and `202x.yaml`) & student data.
 3. Determine the catalog year and concentration.
 4. Audit students' registrations against catalogs; for each student record:
     - Identify failed and completed courses. Remove completed courses from plan.
-    - Project the next 10 courses the student should take.
+    - Project the next XX courses the student should take.
     - Identify three key courses (by priority) from the projection.
     - Calculate the student's registered credit hours.
     - Generate a list of additional courses needed to meet the minimum credit hour requirement.
@@ -240,7 +286,11 @@ The program is designed to be executed as a standalone program. The main steps a
 5. Tally students' recommended courses (from add_courses) into a pivot table
 
 ## Forecasting Student Enrolment Demand
-Recommended courses to complete each student's enrollment to the minimum Credit Hours are tallied and summarized into a pivot table. The resulting summary table is saved into an Excel output file dictated by the `Forecast_Output_File` parameter.
+Recommended courses to complete each student's enrollment to the minimum Credit Hours are tallied and summarized into a pivot table. The resulting summary table is saved into an Excel output file dictated by the following parameters:
+- Forecast_d_Output_File_sum
+- Forecast_d_Output_File_det
+- Forecast_s_Output_File_sum
+- Forecast_s_Output_File_det
 
 ## Usage
 
@@ -249,24 +299,30 @@ Recommended courses to complete each student's enrollment to the minimum Credit 
 To run the script, use the following command:
 
 ```sh
-python Audit_Forecast.py
+python academic4sight.py
 ```
 
 ### Output
 
 The program generates an Excel file with the following columns for each student and text log file:
+
+- `Audit_UsedCatalog`: catalog used for the audit.
 - `Audit_taken`: Courses taken by the student.
 - `Audit_satisfy_groups`: Courses that satisfy group requirements.
 - `Audit_uncounted`: Completed courses not counted in the plan.
+- `Audit_Guessed_substitutions`: Substitutions guessed based on earned CH differences.
 - `Audit_Remaining_in_plan`: Remaining courses in the plan.
 - `Audit_unsatisfied_PreReq`: Courses with unsatisfied prerequisites.
 - `Audit_Projected_Courses`: Projected courses for the next 10 enrolment courses.
 - `Audit_Must_take_Courses`: Key courses that the student must take.
 - `Audit_Courses_to_add`: Additional courses needed to meet credit hour requirements.
-- `Courses_to_add_CH`: Total additional credit hours needed.
+- `Audit_Courses_to_add_CH`: Total additional credit hours needed.
 - `Audit_CH_earned`: Total credit hours earned by the student.
-- `CH_registered`: Total credit hours registered by the student.
+- `Audit_CH_registered`: Total credit hours registered by the student.
+- `Audit_Exception_Mgs`: Reported exception messages.
 - `Audit_Applied_Rules`: Rules applied to the student's course plan.
+- `Audit_Courses_to_add_extend`: Additional courses added by the stochastic forecasting algorithm.
+- `Audit_Courses_to_add_CH_extend`: Total additional credit hours added by the stochastic forecasting algorithm.
 
 ## License
 
