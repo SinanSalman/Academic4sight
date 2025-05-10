@@ -85,8 +85,19 @@ PreRequisites: {
   FIN308: [MTH213, ACC202]
 }
 
-# Key/important courses; pre-requisite courses will be added automatically; order counts: first come, first used
-Key_Courses: [ CIT466 ]
+# Key/important courses; order counts: first come, first used
+# pre-requisite courses will be considered automatically
+# Format:
+#   ALL: applies to all concentrations
+#   CONS: applies to CONS concentration only, in addition to ALL above
+Key_Courses: {
+    ALL: [],
+    SECNET: [],
+    WAM: [],
+    BI: [CIT466],
+    MIS: [],
+    ES: []
+}
 
 # Format: 
 #   Course_Group: [list_of_courses_which_can_satisfy_the_Group]
@@ -210,7 +221,7 @@ Groups: {
 
 # order counts: first come, first executed
 Rules: {
-  # *** New substitution guessing code renders this  (and conflicts with it) ***
+  # *** New substitution guessing code renders this (and conflicts with it) unnecessary ***
   # "Substitute ARA345 for heritage students with an uncounted elective" : {
   #   Skill: [ HT ],
   #   Substitute_Uncounted: { 'ARA345': [     ANT261, ANT302, ANT362, ANT385, ARA211, ARA222, ARA235, ARA335, 
@@ -263,9 +274,18 @@ Rules: {
   Status : ["Military Svc Completion (MC)"],
   Note : "Military Svc Completion; FYE120 and FYE125 met"
   },
+  # "Currently in Military Service" : {
+  # Status : ["Military Service (MS)"],
+  # Drop : [FYE120, FYE125],
+  # Note : "Currently in Military Svc; Drop FYE120 and FYE125 to be met upon completion of svc"
+  # },
   "Non-Native Arabic Speakers" : {
   Skill : [HT, NL],
   Note : "Non-Native Arabic Speakers; need a memo"
+  },
+  "Replace FYE145 for Non-Native Arabic Speakers with FYE146" : {
+    Skill: [ NL ],
+    Replace: { FYE145: FYE146 },
   },
   "NotInPlan courses may be counted as elective or substitute discontinued course" : {
     NotInPlanCount: [1,999],

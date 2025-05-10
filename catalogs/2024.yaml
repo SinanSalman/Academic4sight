@@ -19,9 +19,14 @@ CoRequisites: {
 PreRequisites: {
 }
 
-# Key/important courses; pre-requisite courses will be added automatically; order counts: first come, first used
-Key_Courses: [  FYE100, FYE140, FYE110, FYE150, FYE120, 
-                FYE105, FYE155, FYE195, FYE145, FYE125 ]
+# Key/important courses; order counts: first come, first used
+# pre-requisite courses will be considered automatically
+# Format:
+#   ALL: applies to all concentrations
+#   CONS: applies to CONS concentration only, in addition to ALL above
+Key_Courses: {
+    ALL: [ FYE100, FYE110, FYE120, FYE140, FYE150, FYE105, FYE125, FYE155, FYE195, FYE145 ]
+}
 
 # Concentrations' Catalog entries; Order determines priority
 SECNET:

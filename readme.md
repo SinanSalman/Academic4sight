@@ -1,4 +1,4 @@
-# Student Enrolment Auditing and Forecasting System
+# academic4sight - a system for student enrolment auditing and forecasting
 
 ## Table of Contents
 
@@ -12,13 +12,15 @@
 
 ## Overview
 
-This Python script is designed to audit and plan student registrations by analyzing course completion and projecting future coursework requirements based on a set of predefined rules and configurations.
+This system is designed to audit and plan student registrations by analyzing course completion and projecting future coursework requirements based on a set of predefined rules and configurations.
 
-The script reads student data from an Excel file and course configurations from YAML files. It then processes each student's academic record to determine their completed, failed, and remaining courses. Based on this information, the script generates a course plan and projections for each student.
+The system reads student data from an Excel file and course configurations from YAML files. It then processes each student's academic record to determine their completed, failed, and remaining courses. Based on this information, the program generates a course plan and projections for each student.
+
+The system also generates forecasts for students demands per course, allowing accurate planning of resources.
 
 ## Dependencies
 
-The script requires the following Python libraries:
+The program requires the following Python libraries:
 
 - `pandas`
 - `yaml`
@@ -222,7 +224,7 @@ Rules:
 
 ## Main Logic
 
-The script is designed to be executed as a standalone program. The main steps are:
+The program is designed to be executed as a standalone program. The main steps are:
 
 1. Read the configuration file `_config.yaml`.
 2. Load catalog files (`_catalog_defaults.yaml` and `_202x.yaml`) & student data.
@@ -252,7 +254,7 @@ python Audit_Forecast.py
 
 ### Output
 
-The script generates an Excel file with the following columns for each student and text log file:
+The program generates an Excel file with the following columns for each student and text log file:
 - `Audit_taken`: Courses taken by the student.
 - `Audit_satisfy_groups`: Courses that satisfy group requirements.
 - `Audit_uncounted`: Completed courses not counted in the plan.

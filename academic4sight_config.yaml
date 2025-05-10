@@ -1,6 +1,6 @@
 Verbose:                    False
-catalog_filenames:          "_20*.yaml"
-catalog_defaults:           "_common_catalog.yaml"
+catalog_filenames:          "catalogs/20*.yaml"
+catalog_defaults:           "catalogs/_common_catalog.yaml"
 # Input_File:                 "Student Records Information - Faculty Access Portal.xlsx"
 Input_File:                 "Student Records Information - Faculty Access Portal_Fatna.xlsx"
 Audit_Output_File:          "StudentsAudit.xlsx"
@@ -16,14 +16,14 @@ MaxLabs:                    2
 MinimalEnrollmentMode:      True
 GuessSubstitutions:         True
 CH_ranges:                [ { gpa: [0.0, 1.9999], minCH: 11, maxCH: 13 },     # { gpa: [ minGPA, maxGPA ], minCH: CH maxCH: CH } for each group
-                            { gpa: [2.0, 4.0000], minCH: 14, maxCH: 17 } ]    # use last entry as default when cGPA=0, EarnedHours=0, and FailedCourses=0
+                            { gpa: [2.0, 4.0000], minCH: 14, maxCH: 16 } ]    # use last entry as default when cGPA=0, EarnedHours=0, and FailedCourses=0
 
 Allowed_Duplicate_Courses: [ GroupA, GroupD, GroupG, P_Elective, ZU_Elective ]
 
 # Stochastic forecasting parameters
-Perform_Stochastic_forecasting:       True
+Perform_Stochastic_forecasting:       False
 First_choice_ratio:                   0.75  # used in stochastic forecasting; the ratio of students who will register in their first choice courses (vs. second choice courses)
-Excluded_from_stochastic_forecasting: [ CIT490, CIT499 ]  # used in stochastic forecasting; courses that should not stick with deterministic forecasting
+Excluded_from_stochastic_forecasting: [ CIT490, CIT499 ]  # used in stochastic forecasting; courses that should stick with deterministic forecasting
 
 Concentrations: { 
   "Security and Network Tech" : "SECNET",

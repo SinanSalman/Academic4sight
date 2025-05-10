@@ -4,6 +4,7 @@
 License:    GPLv3
 
 Version History:
+10.05.2025  3.1     rename to academic4sight; KeyCourses are now by concentration; no_duplicates_ordered_list now allow exceptions; add a rule for replacing courses
 16.03.2025  3.05    new features; added a stop_gap logic for CIS-> CTI transfers; MaxLabs; co-reqs are checked both ways; failed courses out of catalog ignored; exceptions reported in log; guessed manual (memo) substitutions
 10.03.2025  3.04    improved logic; conditional substitution rule for uncounted courses
 09.03.2025  3.03    improved logic; replaced fixed minCH with a parameterized CH_ranges logic and MinimalEnrolmentMode (in config.yaml)
@@ -52,8 +53,17 @@ def read_yaml(filename):
         return yaml.load(yamlfile, Loader=yaml.FullLoader)
 
 
-def no_duplicates_ordered_list(list_with_duplicates):
-    return list(dict.fromkeys(list_with_duplicates).keys())
+def no_duplicates_ordered_list(list_with_duplicates, allowed_duplicates=[]):
+    freq = Counter(list_with_duplicates)
+    final_list = []
+    for i in list_with_duplicates:
+        if freq[i] == 1:
+            final_list.append(i)
+        elif freq[i] > 1:
+            if i not in final_list or i in allowed_duplicates:
+                final_list.append(i)
+    return final_list
+    # return list(dict.fromkeys(list_with_duplicates).keys())  # no exception, no duplicates
 
 
 def clean_course_code(course):
@@ -61,7 +71,7 @@ def clean_course_code(course):
 
 
 tik = time.time()
-config_filename = '_config.yaml'
+config_filename = 'academic4sight_config.yaml'
 config = read_yaml(config_filename)
 verbose = config['Verbose']
 
@@ -83,7 +93,10 @@ for filename in glob.glob(config['catalog_filenames']):
             elif isinstance(v, dict):
                 for k1,v1 in v.items():
                     tmp[k][k1] = v1
-    catalogs[filename[1:-5]] = tmp
+    catalog_label = filename[:-5]
+    if '/' in catalog_label:
+        catalog_label = catalog_label.split('/')[-1]
+    catalogs[catalog_label] = tmp
 
 
 def load_data(filename):
@@ -187,6 +200,19 @@ def apply_rule(rules, rec,  cat, CH_earned, Course_CHs,  taken, Projected_Course
                     applicable &= True
                 else:
                     applicable &= False
+            if k == 'Replace':
+                if len(v.keys()) > 1:
+                    raise ValueError(f'Error - Replace rule can only have one course to replace with')
+                (ks, vs), = v.items()
+                substitution = {}
+                for x in vs:
+                    if x in Projected_Courses:  # find first course match
+                        substitution = {ks:x}
+                        break
+                if substitution:
+                    applicable &= True
+                else:
+                    applicable &= False
             if k == 'Substitute_Uncounted':
                 if len(v.keys()) > 1:
                     raise ValueError(f'Error - Substitute_Uncounted rule can only have one course to substitute with')
@@ -234,6 +260,15 @@ def apply_rule(rules, rec,  cat, CH_earned, Course_CHs,  taken, Projected_Course
             if k in Must_take_Courses:
                 Must_take_Courses.remove(k)
             applied_rules.append(f'{label}(substitute:{k}->{v})')
+
+        if ('Replace' in rule.keys() and applicable):
+            (k,v), = substitution.items()
+            if k in Projected_Courses:
+                Projected_Courses[:] = [v if c==k else c for c in Projected_Courses]
+            if k in Must_take_Courses:
+                Must_take_Courses[:] = [v if c==k else c for c in Must_take_Courses]
+            applied_rules.append(f'{label}(Replace:{k}->{v})')
+
     return '\n\t'.join(applied_rules), CH_earned
 
 
@@ -357,7 +392,8 @@ def audit_student_registration(record, catalog_year, concentration):
         Registered_Summer = []
     Completed_and_Current_Courses = no_duplicates_ordered_list(CompletedCourses+CurrentCourses)
     ReportedEarnedHours = rec["Earned Hours"] + rec["Current Credits"]
-    
+    Allowed_Duplicate_Courses = config['Allowed_Duplicate_Courses']
+
     #########################################
     # Stop_Gap logic for CIS->CTI transfers #
     #########################################
@@ -392,9 +428,15 @@ def audit_student_registration(record, catalog_year, concentration):
     #                   END                 #
     #########################################
 
-    #  Collapse all Pre-Reqs into a flat list to add to Key_Courses
-    Key_Courses = catalogs[catalog_year]['Key_Courses'].copy()
+    #  prepare Key_Courses by adding 'ALL' and concentration key courses
+    Key_Courses = []
+    if 'ALL' in catalogs[catalog_year]['Key_Courses'].keys():
+        Key_Courses.extend(catalogs[catalog_year]['Key_Courses']['ALL'])
+    if concentration in catalogs[catalog_year]['Key_Courses'].keys():
+        Key_Courses.extend(catalogs[catalog_year]['Key_Courses'][concentration])
+    
     Key_preReq = []
+    #  Collapse all Pre-Reqs into a flat list to add to Key_Courses
     for course, PreReq in PreRequisites.items():
         if course in cat: # only add pre-req if the course is in the student's catalog
             if isinstance(PreReq, str): # one course
@@ -524,7 +566,7 @@ def audit_student_registration(record, catalog_year, concentration):
                 Must_take_Courses.append(coreq)
                 Must_take_Courses_and_Why.append(f'{course}(Missed_CoReq)')
     for course in cat:  # add remaining courses from plan
-        if course not in Projected_Courses or course in config['Allowed_Duplicate_Courses']:
+        if course not in Projected_Courses or course in Allowed_Duplicate_Courses:
             Projected_Courses.append(course)
         if course in Key_Courses and course not in Must_take_Courses:
             Must_take_Courses.append(course)
@@ -589,11 +631,11 @@ def audit_student_registration(record, catalog_year, concentration):
                 minCH = range['minCH']
                 maxCH = range['maxCH']
 
-    for course in no_duplicates_ordered_list(Must_take_Courses + Projected_Courses):
+    for course in no_duplicates_ordered_list(Must_take_Courses + Projected_Courses, allowed_duplicates=Allowed_Duplicate_Courses):
         if MinimalEnrollmentMode and minCH <= (CH_registered + add_CH) <= maxCH:
             break
         if course not in total_registration and not (minCH <= (CH_registered + add_CH) <= maxCH):
-            if course not in add_courses or course in config['Allowed_Duplicate_Courses']:
+            if course not in add_courses or course in Allowed_Duplicate_Courses:
                 tmp_course_ch = get_course_CHs(course, Course_CHs)
                 tmp_coreq_ch = 0
                 coreq = None
@@ -666,11 +708,11 @@ def audit_student_registration(record, catalog_year, concentration):
             if c in Must_take_Courses_extended:
                 Must_take_Courses_extended.remove(c)
 
-        for course in no_duplicates_ordered_list(Must_take_Courses_extended + Projected_Courses_extended):
+        for course in no_duplicates_ordered_list(Must_take_Courses_extended + Projected_Courses_extended, allowed_duplicates=Allowed_Duplicate_Courses):
             tmp_course_ch = get_course_CHs(course, Course_CHs)
             if add_CH_extended + tmp_course_ch <= add_CH:  # add as many courses as needed to reach the same CH as the deterministic forecast
                 if course not in total_registration:
-                    if course not in add_courses_extended or course in config['Allowed_Duplicate_Courses']:
+                    if course not in add_courses_extended or course in Allowed_Duplicate_Courses:
                         add_courses_extended.append(course)
                         add_CH_extended += tmp_course_ch
 
@@ -697,7 +739,7 @@ def audit_student_registration(record, catalog_year, concentration):
         'taken': ', '.join(taken),
         'satisfy_groups': ', '.join(satisfy_groups),
         'Uncounted': ', '.join(not_in_plan),
-        'possible_substitutions': ', '.join(possible_substitutions),
+        'Guessed_substitutions': ', '.join(possible_substitutions),
         'Remaining_in_plan': ', '.join(cat+courses_w_unsatisfied_prereqs),
         'unsatisfied_PreReq': ', '.join(courses_w_unsatisfied_prereqs_and_why),
         'Projected_Courses': ', '.join(Projected_Courses),
@@ -740,7 +782,7 @@ if __name__ == "__main__":
         df.loc[no_concentration_mask,'Concentration'] = df.loc[no_concentration_mask,'Major']
 
     output_columns = ['Audit_UsedCatalog', 'Audit_taken', 'Audit_satisfy_groups', 'Audit_uncounted', 
-                      'Audit_possible_substitutions', 
+                      'Audit_Guessed_substitutions', 
                       'Audit_Remaining_in_plan','Audit_unsatisfied_PreReq',
                       'Audit_Projected_Courses', 'Audit_Must_take_Courses', 
                       'Audit_Courses_to_add', 'Audit_Courses_to_add_CH', 

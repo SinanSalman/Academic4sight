@@ -19,8 +19,13 @@ CoRequisites: {
 PreRequisites: {
 }
 
-# Key/important courses; pre-requisite courses will be added automatically; order counts: first come, first used
-Key_Courses: [ ]
+# Key/important courses; order counts: first come, first used
+# pre-requisite courses will be considered automatically
+# Format:
+#   ALL: applies to all concentrations
+#   CONS: applies to CONS concentration only, in addition to ALL above
+Key_Courses: {
+}
 
 # Concentrations' Catalog entries; Order determines priority
 SECNET:
